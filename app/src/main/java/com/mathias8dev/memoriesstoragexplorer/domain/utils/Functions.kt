@@ -36,7 +36,7 @@ inline fun <reified T> tryOrNull(block: () -> T?): T? {
     }.getOrNull()
 }
 
-fun allPermissionsIsGranted(context: Context, manifestKeys: Collection<String>): Boolean {
+fun allPermissionsAreGranted(context: Context, manifestKeys: Collection<String>): Boolean {
     return manifestKeys.all {
         ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
     }

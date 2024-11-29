@@ -49,6 +49,7 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.MemoriesStorageExplorer"
             android:windowSoftInputMode="stateAlwaysHidden|adjustResize">
             <intent-filter>
@@ -109,6 +110,41 @@
                 <category android:name="android.intent.category.DEFAULT" />
 
                 <data android:mimeType="text/*" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name=".ui.activities.mediaCopy.MediaCopyActivity"
+            android:exported="true"
+            android:label="@string/media_copy_activity_name"
+            tools:ignore="AppLinkUrlError">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.EDIT" />
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <action android:name="android.intent.action.GET_CONTENT" />
+                <action android:name="android.intent.action.PICK" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <!-- Images -->
+                <data android:mimeType="image/*" />
+                <!-- Videos -->
+                <data android:mimeType="video/*" />
+                <!-- Audio -->
+                <data android:mimeType="audio/*" />
+                <!-- PDF -->
+                <data android:mimeType="application/pdf" />
+                <!-- Archives (e.g., zip, tar) -->
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-tar" />
+                <data android:mimeType="application/x-7z-compressed" />
+                <data android:mimeType="application/x-rar-compressed" />
+                <!-- HTML -->
+                <data android:mimeType="text/html" />
+                <!-- Plain text -->
+                <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
     </application>

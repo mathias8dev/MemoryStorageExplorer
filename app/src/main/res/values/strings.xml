@@ -23,9 +23,9 @@
     <string name="detailed">Detailed</string>
     <string name="columned">Columned</string>
     <string name="type_to_filter">Type to filter</string>
-    <string name="pdf_viewer_activity_name">Pdf viewer msm</string>
-    <string name="image_viewer_activity_name">Image viewer msm</string>
-    <string name="video_player_activity_name">Video player msm</string>
+    <string name="pdf_viewer_activity_name">Pdf viewer</string>
+    <string name="image_viewer_activity_name">Image viewer</string>
+    <string name="video_player_activity_name">Video player</string>
     <string name="file">File</string>
     <string name="folder">Folder</string>
     <string name="please_select_an_app">Please, select an app</string>
@@ -41,7 +41,8 @@
     <string name="file_name">Filename</string>
     <string name="add_file">Add file</string>
     <string name="home">Home</string>
-    <string name="text_viewer_activity_name">Html viewer msm</string>
+    <string name="text_viewer_activity_name">Html viewer</string>
+    <string name="media_copy_activity_name">Copy to</string>
     <plurals name="file_deleted_successfully">
         <item quantity="one">File deleted successfully</item>
         <item quantity="other">Files deleted successfully</item>

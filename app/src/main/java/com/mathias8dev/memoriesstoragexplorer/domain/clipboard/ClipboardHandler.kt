@@ -1,5 +1,6 @@
 package com.mathias8dev.memoriesstoragexplorer.domain.clipboard
 
+import android.net.Uri
 import com.mathias8dev.memoriesstoragexplorer.domain.models.MediaInfo
 import com.mathias8dev.memoriesstoragexplorer.domain.services.fileCopy.FileExistsAction
 import com.mathias8dev.memoriesstoragexplorer.ui.screens.home.ClipboardEntry
@@ -38,6 +39,8 @@ interface ClipboardHandler {
 
 
     suspend fun listen(onEvent: (ClipboardEvent) -> Unit)
+
+    fun copyToClipboard(uris: Collection<Uri>)
 
     sealed class ClipboardEvent {
         data object StartRemoveAllSelectedMedia : ClipboardEvent()

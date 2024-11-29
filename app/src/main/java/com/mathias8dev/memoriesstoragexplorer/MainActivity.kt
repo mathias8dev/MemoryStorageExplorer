@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
+import android.net.Uri
 import android.os.Build.VERSION.SDK_INT
 import android.os.Bundle
 import android.os.IBinder
@@ -31,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.plusAssign
 import coil.Coil
@@ -54,9 +56,11 @@ import com.mathias8dev.memoriesstoragexplorer.ui.theme.MemoriesStorageExplorerTh
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.animations.defaults.RootNavGraphDefaultAnimations
 import com.ramcosta.composedestinations.animations.rememberAnimatedNavHostEngine
+import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import org.koin.androidx.compose.koinViewModel
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import timber.log.Timber
 import java.security.SecureRandom
 import java.security.cert.CertificateException
 import java.security.cert.X509Certificate
@@ -117,11 +121,42 @@ class MainActivity : ComponentActivity() {
         if (fileOperationsAndroidServiceProvider == null) bindToFileOperationsAndroidService()
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+
+        handleIncomingIntent(intent)
+    }
+
+    private fun handleIncomingIntent(intent: Intent) {
+        lifecycleScope.launch {
+            if (intent.extras?.getBoolean("INTERNAL_COPY_ACTION") == true) {
+                Timber.d("On new intent with internal copy action")
+                val uris = mutableListOf<Uri>()
+                intent.data?.let { uri ->
+                    uris.add(uri)
+                }
+
+                if (intent.action == Intent.ACTION_SEND_MULTIPLE) {
+                    intent.clipData?.let { clipData ->
+                        for (i in 0 until clipData.itemCount) {
+                            val uri = clipData.getItemAt(i).uri
+                            uris.add(uri)
+                        }
+                    }
+                }
+
+                clipboardHandler.copyToClipboard(uris)
+
+            }
+        }
+    }
+
     @OptIn(ExperimentalMaterialNavigationApi::class, ExperimentalAnimationApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setupEdgeToEdge()
         setupCoilImageLoader()
+        handleIncomingIntent(intent)
 
         setContent {
             val viewModel: SettingsProviderViewModel = koinViewModel()

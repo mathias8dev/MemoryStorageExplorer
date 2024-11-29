@@ -1,5 +1,6 @@
 package com.mathias8dev.memoriesstoragexplorer.domain.clipboard
 
+import android.net.Uri
 import android.os.Environment
 import androidx.compose.runtime.mutableStateListOf
 import androidx.core.net.toFile
@@ -7,6 +8,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mathias8dev.memoriesstoragexplorer.domain.models.MediaInfo
 import com.mathias8dev.memoriesstoragexplorer.domain.services.fileCopy.FileExistsAction
+import com.mathias8dev.memoriesstoragexplorer.domain.useCases.info.GetMediaInfoUseCase
+import com.mathias8dev.memoriesstoragexplorer.domain.utils.koinInject
 import com.mathias8dev.memoriesstoragexplorer.ui.screens.home.ClipboardEntry
 import com.mathias8dev.memoriesstoragexplorer.ui.screens.home.ClipboardEntryPayload
 import com.mathias8dev.memoriesstoragexplorer.ui.services.fileOperations.FileOperationProgress
@@ -103,7 +106,8 @@ class ClipboardHandlerImpl : ClipboardHandler, ViewModel() {
     }
 
     override fun getByUidOrNull(uid: String): Any? {
-        return clipboard.firstOrNull { it.uid == uid } ?: clipboard.flatMap { it.payloads }.firstOrNull { it.uid == uid }
+        return clipboard.firstOrNull { it.uid == uid } ?: clipboard.flatMap { it.payloads }
+            .firstOrNull { it.uid == uid }
     }
 
     override fun resolveSkippedOperation(uid: String, updatedAction: FileExistsAction, remembered: Boolean) {
@@ -268,7 +272,11 @@ class ClipboardHandlerImpl : ClipboardHandler, ViewModel() {
         }
     }
 
-    override fun onClipboardEntryPayloadClick(entry: ClipboardEntry, payload: ClipboardEntryPayload, destination: String?) {
+    override fun onClipboardEntryPayloadClick(
+        entry: ClipboardEntry,
+        payload: ClipboardEntryPayload,
+        destination: String?
+    ) {
         viewModelScope.launch(Dispatchers.IO) {
             _events.emit(ClipboardHandler.ClipboardEvent.StartClipboardEntryPayloadClick(payload))
             val rootPath = Environment.getExternalStorageDirectory().absolutePath
@@ -278,9 +286,19 @@ class ClipboardHandlerImpl : ClipboardHandler, ViewModel() {
             }
 
             _clipboard.indexOfFirst { it.uid == entry.uid }.takeIf { it != -1 }?.let { clipboardEntryIndex ->
-                _clipboard[clipboardEntryIndex].payloads.indexOfFirst { clipboardPayload -> clipboardPayload.uid == payload.uid }.takeIf { payloadIndex -> payloadIndex != -1 }?.let { payloadIndex ->
-                    _clipboard.set(clipboardEntryIndex, entry.copy(payloads = entry.payloads.toMutableList().apply { set(payloadIndex, payload.copy(status = ClipboardEntryPayload.Status.STARTED)) }))
-                }
+                _clipboard[clipboardEntryIndex].payloads.indexOfFirst { clipboardPayload -> clipboardPayload.uid == payload.uid }
+                    .takeIf { payloadIndex -> payloadIndex != -1 }?.let { payloadIndex ->
+                        _clipboard.set(
+                            clipboardEntryIndex,
+                            entry.copy(
+                                payloads = entry.payloads.toMutableList().apply {
+                                    set(
+                                        payloadIndex,
+                                        payload.copy(status = ClipboardEntryPayload.Status.STARTED)
+                                    )
+                                })
+                        )
+                    }
             }
 
 
@@ -290,7 +308,8 @@ class ClipboardHandlerImpl : ClipboardHandler, ViewModel() {
             // Remove the payload from the clipboard entry
             launch {
                 _clipboard.indexOfFirst { it.uid == entry.uid }.takeIf { it != -1 }?.let { clipboardEntryIndex ->
-                    _clipboard[clipboardEntryIndex] = entry.copy(payloads = entry.payloads.filter { it.uid != payload.uid })
+                    _clipboard[clipboardEntryIndex] =
+                        entry.copy(payloads = entry.payloads.filter { it.uid != payload.uid })
                 }
             }
 
@@ -302,6 +321,30 @@ class ClipboardHandlerImpl : ClipboardHandler, ViewModel() {
         _events.collectLatest { event ->
             coroutineContext.ensureActive()
             onEvent(event)
+        }
+    }
+
+    override fun copyToClipboard(uris: Collection<Uri>) {
+        if (uris.isEmpty()) return
+        viewModelScope.launch {
+            _events.emit(ClipboardHandler.ClipboardEvent.StartCopyToClipboard(_selectedMedia.size))
+            val now = LocalDateTime.now()
+            val getMediaInfoUseCase by koinInject<GetMediaInfoUseCase>()
+            val payloads = uris.map {
+                async {
+                    ClipboardEntryPayload(
+                        mediaInfo = getMediaInfoUseCase.invoke(it)
+                    )
+                }
+            }.awaitAll()
+            _clipboard.add(
+                ClipboardEntry(
+                    intent = ClipboardEntry.Intent.COPY,
+                    time = now,
+                    payloads = payloads
+                )
+            )
+            _events.emit(ClipboardHandler.ClipboardEvent.EndCopyToClipboard(_selectedMedia.size))
         }
     }
 }
