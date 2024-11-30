@@ -8,6 +8,7 @@ import android.provider.MediaStore
 import androidx.core.database.getStringOrNull
 import androidx.core.net.toUri
 import com.mathias8dev.memoriesstoragexplorer.domain.models.MediaInfo
+import com.mathias8dev.memoriesstoragexplorer.ui.utils.asContentSize
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.core.annotation.Factory
@@ -80,7 +81,7 @@ class QueryMediaListFromPathUseCase(
                 mediaList += MediaInfo(
                     mediaId = id,
                     name = name,
-                    size = size,
+                    size = if (file.isFile) size else file.asContentSize(),
                     contentUri = contentUri,
                     privateContentUri = file.toUri(),
                     bucketName = bucketName,

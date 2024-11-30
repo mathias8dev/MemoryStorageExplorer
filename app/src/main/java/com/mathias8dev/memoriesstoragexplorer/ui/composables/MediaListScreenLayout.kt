@@ -43,6 +43,7 @@ fun MediaListScreenLayout(
     onUpdateLayout: (LayoutMode) -> Unit,
     onAdd: (AddMode) -> Unit,
     onSelectAll: () -> Unit,
+    showNavigationIcon: Boolean = true,
     title: @Composable () -> Unit = {
         Text("Accueil")
     },
@@ -73,6 +74,7 @@ fun MediaListScreenLayout(
 
     NavigationDrawerLayout(
         modifier = Modifier.nestedScroll(nestedScrollConnection),
+        showNavigationIcon = showNavigationIcon,
         title = title,
         drawerContent = { drawerState ->
             Column(

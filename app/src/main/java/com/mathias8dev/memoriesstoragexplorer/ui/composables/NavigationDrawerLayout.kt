@@ -1,13 +1,20 @@
 package com.mathias8dev.memoriesstoragexplorer.ui.composables
 
 import androidx.annotation.DrawableRes
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.DrawerState
@@ -22,6 +29,7 @@ import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -29,6 +37,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
@@ -157,6 +166,28 @@ fun NavigationDrawerLayout(
 
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MSEAppBar(
+    modifier: Modifier = Modifier,
+    showNavigationIcon: Boolean = true,
+    title: @Composable () -> Unit,
+    navigationIcon: @Composable () -> Unit
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(TopAppBarDefaults.TopAppBarExpandedHeight)
+            .windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        AnimatedVisibility(showNavigationIcon) {
+            navigationIcon.invoke()
+        }
+        title.invoke()
+    }
+}
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -164,6 +195,7 @@ fun NavigationDrawerLayout(
     modifier: Modifier = Modifier,
     drawerContent: @Composable ColumnScope.(DrawerState) -> Unit,
     bottomBar: @Composable (ColumnScope.() -> Unit)? = null,
+    showNavigationIcon: Boolean = true,
     title: @Composable () -> Unit,
     content: @Composable (PaddingValues, DrawerState) -> Unit
 ) {
@@ -192,19 +224,21 @@ fun NavigationDrawerLayout(
                 TopAppBar(
                     title = title,
                     navigationIcon = {
-                        IconButton(
-                            onClick = {
-                                scope.launch {
-                                    drawerState.apply {
-                                        if (isClosed) open() else close()
+                        AnimatedVisibility(showNavigationIcon) {
+                            IconButton(
+                                onClick = {
+                                    scope.launch {
+                                        drawerState.apply {
+                                            if (isClosed) open() else close()
+                                        }
                                     }
                                 }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Menu,
+                                    contentDescription = "Menu"
+                                )
                             }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Menu,
-                                contentDescription = "Menu"
-                            )
                         }
                     }
                 )

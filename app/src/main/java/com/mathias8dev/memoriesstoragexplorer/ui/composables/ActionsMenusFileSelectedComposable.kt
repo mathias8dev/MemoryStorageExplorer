@@ -3,7 +3,6 @@ package com.mathias8dev.memoriesstoragexplorer.ui.composables
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -54,8 +53,8 @@ fun ActionsMenusFileSelectedComposable(
 
         Column(
             modifier = Modifier
-                .wrapContentSize()
-                .weight(1F),
+                .wrapContentWidth(),
+            horizontalAlignment = Alignment.Start,
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
@@ -74,7 +73,8 @@ fun ActionsMenusFileSelectedComposable(
         }
 
         Row(
-            modifier = Modifier.wrapContentWidth()
+            modifier = Modifier
+                .wrapContentWidth()
         ) {
             IconButton(onClick = onDeleteClick) {
                 Icon(

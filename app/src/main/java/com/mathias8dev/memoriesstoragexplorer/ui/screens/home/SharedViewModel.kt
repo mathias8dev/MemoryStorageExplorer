@@ -39,6 +39,7 @@ import com.mathias8dev.memoriesstoragexplorer.domain.useCases.queries.QueryMedia
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.queries.QueryRecentFilesUseCase
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.Resource
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.data
+import com.mathias8dev.memoriesstoragexplorer.domain.utils.isSuccess
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.otherwise
 import com.mathias8dev.memoriesstoragexplorer.ui.activities.imageViewer.ImageViewerActivity
 import com.mathias8dev.memoriesstoragexplorer.ui.activities.mediaPlayer.MediaPlayerActivity
@@ -85,6 +86,8 @@ class SharedViewModel(
     private val createFileUseCase: FileCreateUseCase,
     private val createDirectoryUseCase: FileCreateDirectoryUseCase
 ) : ViewModel() {
+
+    private var cachedRootMediaInfo: List<MediaInfo>? = null
 
     private val defaultStorageRootPath = Environment.getExternalStorageDirectory().absolutePath
 
@@ -144,8 +147,7 @@ class SharedViewModel(
             backStackHolder.setCurrentPosition(position)
             backStackHolder.addOrUpdateAt(entry = entry)
             Timber.d("backStackEntry: ${backStackEntry.value}")
-            updateStates()
-            loadContentByLastBackStackEntry()
+            onReload(wipeCache = false, force = true)
         }
 
     }
@@ -155,8 +157,7 @@ class SharedViewModel(
             Timber.d("onTabIndexChanged: $index")
             tabsController.updateTabIndex(index)
             backStackHolder.setCurrentPosition(index)
-            updateStates()
-            loadContentByLastBackStackEntry()
+            onReload(wipeCache = false, force = true)
             Timber.d("backStackEntry: ${backStackEntry.value}")
         }
     }
@@ -167,7 +168,7 @@ class SharedViewModel(
             tabsController.removeTabAt(index)
             backStackHolder.removeAt(index)
             backStackHolder.setCurrentPosition(tabIndex.value)
-            updateStates()
+            onReload(wipeCache = false, force = true)
             Timber.d("backStackEntry: ${backStackEntry.value}")
         }
     }
@@ -176,9 +177,8 @@ class SharedViewModel(
         viewModelScope.launch {
             Timber.d("onTabIndexChangedBasedOnSwipe")
             tabsController.updateTabIndexBasedOnSwipe(isSwipeToLeft)
-            backStackHolder.setCurrentPosition(tabIndex.value)
-            updateStates()
-            loadContentByLastBackStackEntry()
+            val entry = backStackHolder.getAt(tabIndex.value) ?: BackStackHolder.default
+            onBackStackEntryChanged(entry = entry)
             Timber.d("backStackEntry: ${backStackEntry.value}")
         }
     }
@@ -187,8 +187,7 @@ class SharedViewModel(
         viewModelScope.launch {
             Timber.d("onPopCurrentBackStack")
             backStackHolder.removeAt()
-            updateStates()
-            loadContentByLastBackStackEntry()
+            onReload(wipeCache = false, force = true)
             Timber.d("backStackEntry: ${backStackEntry.value}")
         }
     }
@@ -324,7 +323,7 @@ class SharedViewModel(
 
             queryFunc?.let { func ->
                 _mediaQueryRequestResponse.emit(Resource.Loading())
-                val result = kotlin.runCatching { func.invoke() }.getOrElse {
+                val result = if (!cachedRootMediaInfo.isNullOrEmpty() && path == defaultStorageRootPath) cachedRootMediaInfo else kotlin.runCatching { func.invoke() }.getOrElse {
                     _mediaQueryRequestResponse.emit(Resource.Error())
                     null
                 }
@@ -332,6 +331,7 @@ class SharedViewModel(
                     val filtered = it.filter { mediaInfo -> filterQueries.all { filterQuery -> filterQuery.filter(mediaInfo, false) } }
                     val sorted = filtered.sortedWith(sortMode)
                     _mediaQueryRequestResponse.emit(Resource.Success(sorted))
+                    if (cachedRootMediaInfo.isNullOrEmpty() && path == defaultStorageRootPath) cachedRootMediaInfo = sorted
                 }
             }
 
@@ -435,11 +435,12 @@ class SharedViewModel(
         }
     }
 
-    fun onReload() {
+    fun onReload(wipeCache: Boolean = true, force: Boolean = true) {
         Timber.d("onReload")
         viewModelScope.launch {
+            if (wipeCache) cachedRootMediaInfo = null
             updateStates()
-            loadContentByLastBackStackEntry(true)
+            loadContentByLastBackStackEntry(force)
         }
     }
 
@@ -447,8 +448,7 @@ class SharedViewModel(
         viewModelScope.launch {
             val entry = (backStackEntry.value ?: BackStackHolder.default).copy(filterQueries = queries)
             backStackHolder.updateLastEntryAt(entry = entry)
-            updateStates()
-            loadContentByLastBackStackEntry()
+            onReload(wipeCache = false, force = false)
         }
     }
 
@@ -462,8 +462,7 @@ class SharedViewModel(
         viewModelScope.launch {
             val entry = (backStackEntry.value ?: BackStackHolder.default).copy(sortMode = sortMode)
             backStackHolder.updateLastEntryAt(entry = entry)
-            updateStates()
-            loadContentByLastBackStackEntry()
+            onReload(wipeCache = false, force = false)
         }
     }
 
@@ -493,14 +492,26 @@ class SharedViewModel(
     }
 
 
-    private fun loadContentByLastBackStackEntry(force: Boolean = false) {
+    private fun loadContentByLastBackStackEntry(force: Boolean = true) {
         viewModelScope.launch {
             val entry = backStackHolder.getAt().otherwise(BackStackHolder.default)
+            if (_mediaQueryRequestResponse.value.isSuccess() && !force) {
+                _mediaQueryRequestResponse.value.data?.let { mediaList ->
+                    val filtered = mediaList.filter { mediaInfo -> entry.filterQueries.all { filterQuery -> filterQuery.filter(mediaInfo, false) } }
+                    val sorted = filtered.sortedWith(entry.sortMode)
+                    _mediaQueryRequestResponse.emit(Resource.Success(sorted))
+
+                    return@launch
+                }
+
+            }
+
             queryFilesByAbstractPath(
                 path = entry.path ?: defaultStorageRootPath,
                 filterQueries = entry.filterQueries,
                 sortMode = entry.sortMode
             )
+
         }
     }
 
@@ -515,7 +526,7 @@ class SharedViewModel(
                         createDirectoryUseCase(file.absolutePath)
                     }
                 }
-                loadContentByLastBackStackEntry()
+                onReload(true)
                 _effect.emit(Effect.HideAddMediaDialog)
                 emitSnackbarEffect(
                     loadStringResourceUseCase.invoke(R.plurals.folder_created_successfully, count)
@@ -535,7 +546,7 @@ class SharedViewModel(
                         createFileUseCase(currentRootPath, fileName, extension)
                     }
                 }
-                loadContentByLastBackStackEntry()
+                onReload(true)
                 _effect.emit(Effect.HideAddMediaDialog)
                 emitSnackbarEffect(
                     loadStringResourceUseCase.invoke(R.plurals.file_created_successfully, count),

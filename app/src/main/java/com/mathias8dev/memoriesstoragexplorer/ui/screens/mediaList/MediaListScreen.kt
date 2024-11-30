@@ -336,6 +336,7 @@ fun MediaListScreen(
 
 
 
+
     MediaListScreenLayout(
         currentQuery = searchTerm,
         onNavigateToMediaGroup = {
@@ -352,6 +353,7 @@ fun MediaListScreen(
                 clipboardHandler.onAddAllMedia(mediaList)
             }
         },
+        showNavigationIcon = selectedMedia.isEmpty(),
         title = {
             Row(modifier = Modifier.fillMaxWidth()) {
                 Column {
@@ -366,7 +368,7 @@ fun MediaListScreen(
 
 
                     // SelectedMedia is not empty, in selection mode
-                    AnimatedVisibility(selectedMedia.isNotEmpty()) {
+                    if (selectedMedia.isNotEmpty()) {
                         val selectedMediaSize by remember(selectedMedia) {
                             derivedStateOf {
                                 selectedMedia.sumOf { it.size }
@@ -375,7 +377,7 @@ fun MediaListScreen(
 
                         ActionsMenusFileSelectedComposable(
                             modifier = Modifier
-                                .fillMaxWidth(0.89F),
+                                .wrapContentWidth(),
                             selectedFilesSize = selectedMediaSize,
                             selectedFilesCount = selectedMedia.size,
                             onUnselectAllClick = {
@@ -398,7 +400,10 @@ fun MediaListScreen(
                 }
 
 
-                Spacer(modifier = Modifier.weight(1F))
+                Spacer(
+                    modifier = Modifier
+                        .weight(1F)
+                )
 
 
                 AnimatedVisibility(selectedMedia.isEmpty() && clipboard.isNotEmpty()) {
