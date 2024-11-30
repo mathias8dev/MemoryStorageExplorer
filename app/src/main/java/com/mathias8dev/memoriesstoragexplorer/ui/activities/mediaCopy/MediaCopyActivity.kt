@@ -25,7 +25,7 @@ class MediaCopyActivity : ComponentActivity() {
             intentToMain.putExtras(extras)
         }
 
-        // Handle clip data (e.g., multiple URIs)
+
         if (originalIntent.clipData != null) {
             intentToMain.clipData = originalIntent.clipData
         }

@@ -2,6 +2,7 @@ package com.mathias8dev.memoriesstoragexplorer.ui.screens.home
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Environment
 import android.widget.Toast
 import androidx.compose.foundation.pager.PagerState
@@ -399,14 +400,11 @@ class SharedViewModel(
                     }
 
                     else -> {
-                        val uri = mediaInfo.contentUri ?: derivedFile.asContentSchemeUri(context)
-
-                        val intent = Intent()
-                        intent.action = Intent.ACTION_VIEW
-                        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        intent.setDataAndType(uri, mimeData?.mimeType)
-                        val chooserIntent = Intent.createChooser(intent, loadStringResourceUseCase.invoke(R.string.please_select_an_app))
-                        context.startActivity(chooserIntent)
+                        launchIntent(
+                            uri = mediaInfo.contentUri ?: derivedFile.asContentSchemeUri(context),
+                            context = context,
+                            mimeType = mimeData?.mimeType
+                        )
                     }
                 }
             } else {
@@ -599,5 +597,38 @@ class SharedViewModel(
         data object ShowAddFileDialog : Effect()
         data object ShowAddFolderDialog : Effect()
         data object HideAddMediaDialog : Effect()
+    }
+}
+
+
+fun launchIntent(uri: Uri?, action: String = Intent.ACTION_VIEW, mimeType: String?, context: Context) {
+    val intent = Intent()
+    intent.action = action
+    intent.setDataAndType(uri, mimeType)
+    val chooserIntent = Intent.createChooser(intent, context.resources.getString((R.string.please_select_an_app)))
+    context.startActivity(chooserIntent)
+}
+
+fun launchSendIntent(uris: Collection<Uri>, context: Context) {
+    if (uris.isEmpty()) return
+    // Group the URIs by MIME type
+    val uriMap = uris.groupBy { context.contentResolver.getType(it) }
+
+    uriMap.forEach { (mimeType, urisOfType) ->
+        val action = if (urisOfType.size == 1) Intent.ACTION_SEND else Intent.ACTION_SEND_MULTIPLE
+
+        val intent = Intent(action).apply {
+            type = mimeType
+            if (urisOfType.size == 1) {
+                putExtra(Intent.EXTRA_STREAM, urisOfType.first())
+            } else {
+                putExtra(Intent.EXTRA_STREAM, ArrayList(urisOfType))
+            }
+        }
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
+        // Launch the chooser for each MIME type group
+        val chooserIntent = Intent.createChooser(intent, context.getString(R.string.please_select_an_app))
+        context.startActivity(chooserIntent)
     }
 }

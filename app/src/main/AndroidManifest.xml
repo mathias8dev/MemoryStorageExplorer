@@ -24,10 +24,10 @@
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:enableOnBackInvokedCallback="true"
         android:fullBackupContent="@xml/backup_rules"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/ic_launcher2_mse"
         android:label="@string/app_name"
         android:requestLegacyExternalStorage="true"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@mipmap/ic_launcher2_mse_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MemoriesStorageExplorer"
         android:usesCleartextTraffic="true">
@@ -100,6 +100,20 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".ui.activities.basicTextEditor.BasicTextEditorActivity"
+            android:exported="true"
+            android:label="@string/basic_text_editor_activity_name"
+            tools:ignore="AppLinkUrlError">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.EDIT" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="text/*" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".ui.activities.htmlViewer.HtmlViewerActivity"
             android:exported="true"
             android:label="@string/text_viewer_activity_name"
@@ -122,10 +136,7 @@
                 <action android:name="android.intent.action.EDIT" />
                 <action android:name="android.intent.action.SEND" />
                 <action android:name="android.intent.action.SEND_MULTIPLE" />
-                <action android:name="android.intent.action.GET_CONTENT" />
-                <action android:name="android.intent.action.PICK" />
 
-                <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.DEFAULT" />
 
                 <!-- Images -->

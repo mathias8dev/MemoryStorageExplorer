@@ -31,7 +31,7 @@ class QueryAllDocumentsUseCase(private val context: Context) {
             MediaStore.Files.FileColumns.DISPLAY_NAME,
             MediaStore.Files.FileColumns.SIZE,
             MediaStore.Files.FileColumns.MIME_TYPE,
-            MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME
+            MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME,
         )
 
         // Define the selection criteria for documents, including ePub files
@@ -61,6 +61,7 @@ class QueryAllDocumentsUseCase(private val context: Context) {
             val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DISPLAY_NAME)
             val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.SIZE)
             val bucketNameColumn = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME)
+            val mimeTypeColumn = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MIME_TYPE)
 
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idColumn)
@@ -68,6 +69,7 @@ class QueryAllDocumentsUseCase(private val context: Context) {
                 val size = cursor.getLong(sizeColumn)
                 val bucketName = cursor.getString(bucketNameColumn)
                 val filePath = cursor.getString(dataColumn)
+                val mimeType = cursor.getString(mimeTypeColumn)
 
                 // Build content URIs
                 val contentUri: Uri = Uri.withAppendedPath(collection, id.toString())
@@ -80,7 +82,8 @@ class QueryAllDocumentsUseCase(private val context: Context) {
                     name = name,
                     size = size,
                     bucketName = bucketName,
-                    bucketPrivateContentUri = file.parentFile?.toUri()
+                    bucketPrivateContentUri = file.parentFile?.toUri(),
+                    mimeTypeString = mimeType
                 )
 
                 documentList.add(mediaInfo)

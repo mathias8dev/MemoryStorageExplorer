@@ -34,7 +34,8 @@ class QueryAllAudiosUseCase(private val context: Context) {
             MediaStore.Audio.Media.DISPLAY_NAME,
             MediaStore.Audio.Media.DURATION,
             MediaStore.Audio.Media.SIZE,
-            MediaStore.Audio.Media.BUCKET_DISPLAY_NAME
+            MediaStore.Audio.Media.BUCKET_DISPLAY_NAME,
+            MediaStore.Audio.Media.MIME_TYPE
         )
 
 
@@ -56,6 +57,7 @@ class QueryAllAudiosUseCase(private val context: Context) {
             val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE)
             val dataUriColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA)
             val bucketNameColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.BUCKET_DISPLAY_NAME)
+            val mimeTypeColumn = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.MIME_TYPE)
 
             while (cursor.moveToNext()) {
                 // Get values of columns for a given video.
@@ -64,6 +66,7 @@ class QueryAllAudiosUseCase(private val context: Context) {
                 val duration = cursor.getLong(durationColumn)
                 val size = cursor.getLong(sizeColumn)
                 val bucketName = cursor.getStringOrNull(bucketNameColumn)
+                val mimeType = cursor.getString(mimeTypeColumn)
 
                 val contentUri: Uri = ContentUris.withAppendedId(
                     MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
@@ -82,6 +85,7 @@ class QueryAllAudiosUseCase(private val context: Context) {
                     size = size,
                     bucketName = bucketName,
                     bucketPrivateContentUri = file.parentFile?.toUri(),
+                    mimeTypeString = mimeType
                 )
             }
         }

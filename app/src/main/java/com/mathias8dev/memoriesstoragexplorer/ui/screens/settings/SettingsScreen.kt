@@ -31,18 +31,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.mathias8dev.memoriesstoragexplorer.BuildConfig
+import com.mathias8dev.memoriesstoragexplorer.R
 import com.mathias8dev.memoriesstoragexplorer.domain.models.AppSettings
 import com.mathias8dev.memoriesstoragexplorer.domain.models.LocalAppSettings
+import com.mathias8dev.memoriesstoragexplorer.ui.composables.CopiableText
 import com.ramcosta.composedestinations.annotation.Destination
 import com.ramcosta.composedestinations.annotation.RootNavGraph
 import com.ramcosta.composedestinations.navigation.DestinationsNavigator
 import org.koin.androidx.compose.koinViewModel
-import timber.log.Timber
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,9 +76,6 @@ fun SettingsScreen(
 
     }
 
-    LaunchedEffect(appSettings) {
-        Timber.d("The updated settings is $appSettings")
-    }
 
     val appbarColors by deriveColorsFromScrollFraction(scrollBehavior.state.overlappedFraction)
 
@@ -93,7 +92,7 @@ fun SettingsScreen(
                 title = {
                     Text(
                         modifier = Modifier.padding(start = 8.dp),
-                        text = "Paramètres"
+                        text = stringResource(R.string.settings)
                     )
                 },
                 navigationIcon = {
@@ -127,7 +126,7 @@ fun SettingsScreen(
                 ) {
                     SwitchSettingItem(
                         actionTitle = "Theme",
-                        actionContent = "Utiliser le dark Mode",
+                        actionContent = stringResource(R.string.use_dark_theme),
                         value = appSettings.useDarkMode,
                         onValueChanged = {
                             viewModel.onAppSettingsChanged(AppSettings::useDarkMode, it)
@@ -137,7 +136,7 @@ fun SettingsScreen(
 
                 }
 
-                SettingsItemSection(
+                /*SettingsItemSection(
                     modifier = Modifier
                         .padding(horizontal = 16.dp)
                         .animateContentSize(),
@@ -152,7 +151,7 @@ fun SettingsScreen(
                         }
                     )
 
-                }
+                }*/
 
 
 
@@ -170,7 +169,7 @@ fun SettingsScreen(
                         }
                         .fillMaxWidth()
                         .padding(vertical = 12.dp),
-                    text = "Réinitialiser les paramètres",
+                    text = stringResource(R.string.reset_settings),
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.error
                 )
@@ -203,7 +202,15 @@ fun CreatedByMe(modifier: Modifier = Modifier) {
             text = "Powored by mathias8dev",
             color = MaterialTheme.colorScheme.primary,
             fontSize = 14.sp,
-            fontWeight = FontWeight(600)
+            fontWeight = FontWeight(600),
+            lineHeight = 14.sp
+        )
+        CopiableText(
+            text = "kalipemathias.pro@gmail.com",
+            color = MaterialTheme.colorScheme.primary,
+            fontSize = 12.sp,
+            fontWeight = FontWeight(600),
+            lineHeight = 12.sp
         )
     }
 }
@@ -223,7 +230,14 @@ fun DevelopedByMe(modifier: Modifier = Modifier) {
             text = "Developed by mathias8dev",
             color = MaterialTheme.colorScheme.primary,
             fontSize = 14.sp,
-            fontWeight = FontWeight(600)
+            fontWeight = FontWeight(600),
+            lineHeight = 14.sp
+        )
+        CopiableText(
+            text = "kalipemathias.pro@gmail.com",
+            color = Color(0xFF555454),
+            fontSize = 12.sp,
+            fontWeight = FontWeight(600),
         )
     }
 }

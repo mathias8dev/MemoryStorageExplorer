@@ -16,7 +16,8 @@ data class MediaInfo(
     val size: Long = 0L,
     val name: String? = null,
     val bucketName: String? = null,
-    val bucketPrivateContentUri: Uri? = null
+    val bucketPrivateContentUri: Uri? = null,
+    val mimeTypeString: String? = null,
 ) : Parcelable
 
 fun MediaInfo.toFile(): File? = privateContentUri?.toFile()

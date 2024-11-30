@@ -34,7 +34,8 @@ class QueryAllVideosUseCase(private val context: Context) {
             MediaStore.Video.Media.DISPLAY_NAME,
             MediaStore.Video.Media.DURATION,
             MediaStore.Video.Media.SIZE,
-            MediaStore.Video.Media.BUCKET_DISPLAY_NAME
+            MediaStore.Video.Media.BUCKET_DISPLAY_NAME,
+            MediaStore.Video.Media.MIME_TYPE
         )
 
 
@@ -56,6 +57,7 @@ class QueryAllVideosUseCase(private val context: Context) {
             val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.SIZE)
             val dataUriColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.DATA)
             val bucketNameColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.BUCKET_DISPLAY_NAME)
+            val mimeTypeColumn = cursor.getColumnIndexOrThrow(MediaStore.Video.Media.MIME_TYPE)
 
             while (cursor.moveToNext()) {
                 // Get values of columns for a given video.
@@ -68,6 +70,7 @@ class QueryAllVideosUseCase(private val context: Context) {
                     MediaStore.Video.Media.EXTERNAL_CONTENT_URI,
                     id
                 )
+                val mimeType = cursor.getString(mimeTypeColumn)
 
                 val file = File(cursor.getString(dataUriColumn))
 
@@ -81,6 +84,7 @@ class QueryAllVideosUseCase(private val context: Context) {
                     size = size,
                     bucketName = bucketName,
                     bucketPrivateContentUri = file.parentFile?.toUri(),
+                    mimeTypeString = mimeType
                 )
             }
         }

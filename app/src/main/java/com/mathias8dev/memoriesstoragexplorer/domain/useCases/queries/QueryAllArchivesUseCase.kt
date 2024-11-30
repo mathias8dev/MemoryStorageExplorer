@@ -59,7 +59,8 @@ class QueryAllArchivesUseCase(private val context: Context) {
             MediaStore.Files.FileColumns.DISPLAY_NAME,
             MediaStore.Files.FileColumns.SIZE,
             MediaStore.Files.FileColumns.DATA,
-            MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME
+            MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME,
+            MediaStore.Files.FileColumns.MIME_TYPE
         )
 
 
@@ -82,6 +83,7 @@ class QueryAllArchivesUseCase(private val context: Context) {
                 val size = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.SIZE))
                 val filePath = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATA))
                 val bucketName = cursor.getStringOrNull(cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME))
+                val mimeType = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MIME_TYPE))
 
                 val contentUri: Uri = ContentUris.withAppendedId(
                     collection,
@@ -98,7 +100,8 @@ class QueryAllArchivesUseCase(private val context: Context) {
                     contentUri = contentUri,
                     privateContentUri = file.toUri(),
                     bucketName = bucketName,
-                    bucketPrivateContentUri = file.parentFile?.toUri()
+                    bucketPrivateContentUri = file.parentFile?.toUri(),
+                    mimeTypeString = mimeType
                 )
             }
             cursor.close()

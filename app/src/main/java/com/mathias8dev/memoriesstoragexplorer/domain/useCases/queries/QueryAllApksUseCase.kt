@@ -50,7 +50,7 @@ class QueryAllApksUseCase(private val context: Context) {
             MediaStore.Files.FileColumns.DISPLAY_NAME,
             MediaStore.Files.FileColumns.SIZE,
             MediaStore.Files.FileColumns.DATA,
-            MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME
+            MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME,
         )
 
 
@@ -87,7 +87,8 @@ class QueryAllApksUseCase(private val context: Context) {
                     contentUri = contentUri,
                     privateContentUri = File(filePath).toUri(),
                     bucketName = bucketName,
-                    bucketPrivateContentUri = null
+                    bucketPrivateContentUri = null,
+                    mimeTypeString = "application/vnd.android.package-archive"
                 )
             }
             cursor.close()

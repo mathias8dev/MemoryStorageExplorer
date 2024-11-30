@@ -45,12 +45,14 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toFile
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mathias8dev.memoriesstoragexplorer.LocalClipboardHandler
 import com.mathias8dev.memoriesstoragexplorer.LocalSnackbarHostState
+import com.mathias8dev.memoriesstoragexplorer.R
 import com.mathias8dev.memoriesstoragexplorer.domain.FilterQuery
 import com.mathias8dev.memoriesstoragexplorer.domain.clipboard.ClipboardHandler
 import com.mathias8dev.memoriesstoragexplorer.domain.models.MediaInfo
@@ -78,6 +80,8 @@ import com.mathias8dev.memoriesstoragexplorer.ui.screens.home.BackStackEntry
 import com.mathias8dev.memoriesstoragexplorer.ui.screens.home.ClipboardEntry
 import com.mathias8dev.memoriesstoragexplorer.ui.screens.home.ClipboardEntryPayload
 import com.mathias8dev.memoriesstoragexplorer.ui.screens.home.SharedViewModel
+import com.mathias8dev.memoriesstoragexplorer.ui.screens.home.launchIntent
+import com.mathias8dev.memoriesstoragexplorer.ui.screens.home.launchSendIntent
 import com.mathias8dev.memoriesstoragexplorer.ui.screens.home.mediaList.MediaListComposable
 import com.mathias8dev.memoriesstoragexplorer.ui.screens.home.mediaList.MediaListLoadingComposable
 import com.mathias8dev.memoriesstoragexplorer.ui.services.fileOperations.FileOperationsAndroidService
@@ -516,13 +520,37 @@ fun MediaListScreen(
                                 modifier = Modifier
                                     .clickable {
                                         showContextMenu = false
-                                        selectedMedia.firstOrNull()?.contentUri
-                                            ?.toString()
-                                            ?.let { localUriHandler.openUri(it) }
+                                        selectedMedia
+                                            .firstOrNull()
+                                            ?.let {
+                                                Timber.d("The mimeType is ${it.mimeTypeString}")
+                                                launchIntent(uri = it.contentUri, mimeType = it.mimeTypeString, context = localContext)
+                                            }
                                     }
                                     .wrapContentWidth()
                                     .padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 72.dp),
                                 text = "Open with",
+                                fontSize = 14.sp,
+                                lineHeight = 14.sp
+                            )
+
+                        }
+
+                        if (selectedMedia.all { it.mimeTypeString != null } && selectedMedia.isNotEmpty()) {
+                            Text(
+                                modifier = Modifier
+                                    .clickable {
+                                        showContextMenu = false
+                                        selectedMedia
+                                            .firstOrNull()
+                                            ?.let {
+                                                val uris = selectedMedia.mapNotNull { info -> info.contentUri }
+                                                launchSendIntent(uris = uris, context = localContext)
+                                            }
+                                    }
+                                    .wrapContentWidth()
+                                    .padding(start = 16.dp, top = 8.dp, bottom = 8.dp, end = 72.dp),
+                                text = stringResource(R.string.share),
                                 fontSize = 14.sp,
                                 lineHeight = 14.sp
                             )

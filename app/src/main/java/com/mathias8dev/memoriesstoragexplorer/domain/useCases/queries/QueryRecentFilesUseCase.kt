@@ -62,6 +62,7 @@ class QueryRecentFilesUseCase(private val context: Context) {
             val dataColumn = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATA)
             val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DISPLAY_NAME)
             val bucketNameColumn = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME)
+            val mimeTypeColumn = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MIME_TYPE)
 
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idColumn)
@@ -69,6 +70,7 @@ class QueryRecentFilesUseCase(private val context: Context) {
                 val filePath = cursor.getString(dataColumn)
                 val name = cursor.getString(nameColumn)
                 val bucketName = cursor.getStringOrNull(bucketNameColumn)
+                val mimeType = cursor.getString(mimeTypeColumn)
 
                 val contentUri = ContentUris.withAppendedId(collection, id)
                 val file = File(filePath)
@@ -80,7 +82,8 @@ class QueryRecentFilesUseCase(private val context: Context) {
                     name = name,
                     size = size,
                     bucketName = bucketName,
-                    bucketPrivateContentUri = file.parentFile?.toUri()
+                    bucketPrivateContentUri = file.parentFile?.toUri(),
+                    mimeTypeString = mimeType
                 )
             }
         }

@@ -62,6 +62,7 @@ class QueryMediaListFromPathUseCase(
             val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.SIZE)
             val dataColumn = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATA)
             val bucketNameColumn = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME)
+            val mimeTypeColumn = cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MIME_TYPE)
 
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idColumn)
@@ -69,6 +70,7 @@ class QueryMediaListFromPathUseCase(
                 val size = cursor.getLong(sizeColumn)
                 val filePath = cursor.getString(dataColumn)
                 val bucketName = cursor.getStringOrNull(bucketNameColumn)
+                val mimeType = cursor.getString(mimeTypeColumn)
 
                 val contentUri: Uri = ContentUris.withAppendedId(
                     collection,
@@ -85,7 +87,8 @@ class QueryMediaListFromPathUseCase(
                     contentUri = contentUri,
                     privateContentUri = file.toUri(),
                     bucketName = bucketName,
-                    bucketPrivateContentUri = file.parentFile?.toUri()
+                    bucketPrivateContentUri = file.parentFile?.toUri(),
+                    mimeTypeString = mimeType
                 )
             }
         }

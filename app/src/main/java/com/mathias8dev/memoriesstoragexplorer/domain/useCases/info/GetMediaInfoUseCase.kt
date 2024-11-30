@@ -22,11 +22,17 @@ class GetMediaInfoUseCase(private val context: Context) {
                 val name = it.getString(it.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DISPLAY_NAME))
                 val size = it.getLong(it.getColumnIndexOrThrow(MediaStore.Files.FileColumns.SIZE))
                 val filePath = it.getString(it.getColumnIndexOrThrow(MediaStore.Files.FileColumns.DATA))
+                val mimeType = it.getString(it.getColumnIndexOrThrow(MediaStore.Files.FileColumns.MIME_TYPE))
+                val bucketName = it.getString(it.getColumnIndexOrThrow(MediaStore.Files.FileColumns.BUCKET_DISPLAY_NAME))
+
                 val file = File(filePath)
                 mediaInfo = mediaInfo.copy(
                     name = name,
                     size = size,
+                    contentUri = uri,
                     privateContentUri = file.toUri(),
+                    bucketName = bucketName,
+                    mimeTypeString = mimeType,
                     bucketPrivateContentUri = file.parentFile?.toUri(),
                 )
             }

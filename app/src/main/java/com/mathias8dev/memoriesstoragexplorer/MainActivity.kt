@@ -139,13 +139,14 @@ class MainActivity : ComponentActivity() {
                     uris.add(uri)
                 }
 
-                if (intent.action == Intent.ACTION_SEND_MULTIPLE) {
-                    intent.clipData?.let { clipData ->
-                        for (i in 0 until clipData.itemCount) {
-                            val uri = clipData.getItemAt(i).uri
-                            uris.add(uri)
-                        }
+                intent.clipData?.let { clipData ->
+                    for (i in 0 until clipData.itemCount) {
+                        val uri = clipData.getItemAt(i).uri
+                        uris.add(uri)
                     }
+                }
+                intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)?.let { streamUris ->
+                    uris.addAll(streamUris)
                 }
 
                 clipboardHandler.copyToClipboard(uris)

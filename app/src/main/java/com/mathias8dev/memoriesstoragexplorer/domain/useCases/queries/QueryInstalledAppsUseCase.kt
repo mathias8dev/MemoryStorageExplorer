@@ -35,7 +35,8 @@ class QueryInstalledAppsUseCase(private val context: Context) {
                     contentUri = apkFile.toUri(), // URI pointing to the APK
                     privateContentUri = apkFile.toUri(), // Same as above
                     bucketName = "Installed Apps", // Group name (optional)
-                    bucketPrivateContentUri = null
+                    bucketPrivateContentUri = null,
+                    mimeTypeString = "application/vnd.android.package-archive"
                 )
             } catch (e: Exception) {
                 // Log and skip this app if there's an issue
