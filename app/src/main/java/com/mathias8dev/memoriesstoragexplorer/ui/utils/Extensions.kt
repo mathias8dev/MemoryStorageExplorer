@@ -6,11 +6,15 @@ import android.graphics.drawable.Drawable
 import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Environment
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import com.mathias8dev.memoriesstoragexplorer.R
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.GetFileNameUseCase
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.koinInject
@@ -107,7 +111,8 @@ fun File.isMusicDirectory(): Boolean {
 
 fun String.isWordDocument() = this == MimeSuffix.DOC || this == MimeSuffix.DOCX || this == MimeSuffix.DOCM
 
-fun String.isExcelDocument() = this == MimeSuffix.XLS || this == MimeSuffix.XLSX || this == MimeSuffix.XLTX || this == MimeSuffix.XLSM
+fun String.isExcelDocument() =
+    this == MimeSuffix.XLS || this == MimeSuffix.XLSX || this == MimeSuffix.XLTX || this == MimeSuffix.XLSM
 
 fun String.isAndroidApk() = this.equals("apk", true)
 
@@ -223,7 +228,7 @@ fun File.isSystemFile(): Boolean {
 @Stable
 fun Modifier.on(
     condition: Boolean,
-    use: (currentModifier: Modifier) -> Modifier
+    use: Modifier.(currentModifier: Modifier) -> Modifier
 ): Modifier {
     return if (condition) use(this) else this
 }
@@ -240,3 +245,16 @@ fun Dp.dpToPx() = with(LocalDensity.current) { this@dpToPx.toPx() }
 
 
 fun <T> Boolean.select(first: T, second: T): T = if (this) first else second
+
+internal fun PaddingValues.copy(
+    layoutDirection: LayoutDirection,
+    start: Dp? = null,
+    top: Dp? = null,
+    end: Dp? = null,
+    bottom: Dp? = null,
+) = PaddingValues(
+    start = start ?: calculateStartPadding(layoutDirection),
+    top = top ?: calculateTopPadding(),
+    end = end ?: calculateEndPadding(layoutDirection),
+    bottom = bottom ?: calculateBottomPadding(),
+)

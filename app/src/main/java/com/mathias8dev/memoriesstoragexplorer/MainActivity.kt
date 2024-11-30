@@ -4,6 +4,7 @@ import android.annotation.SuppressLint
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build.VERSION.SDK_INT
 import android.os.Bundle
@@ -13,8 +14,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
@@ -29,6 +29,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -53,6 +54,8 @@ import com.mathias8dev.memoriesstoragexplorer.ui.services.fileOperations.Clipboa
 import com.mathias8dev.memoriesstoragexplorer.ui.services.fileOperations.FileOperationsAndroidService
 import com.mathias8dev.memoriesstoragexplorer.ui.services.fileOperations.FileOperationsClipboardExecutorAndroidServiceImpl
 import com.mathias8dev.memoriesstoragexplorer.ui.theme.MemoriesStorageExplorerTheme
+import com.mathias8dev.memoriesstoragexplorer.ui.utils.copy
+import com.mathias8dev.memoriesstoragexplorer.ui.utils.on
 import com.ramcosta.composedestinations.DestinationsNavHost
 import com.ramcosta.composedestinations.animations.defaults.RootNavGraphDefaultAnimations
 import com.ramcosta.composedestinations.animations.rememberAnimatedNavHostEngine
@@ -158,6 +161,14 @@ class MainActivity : ComponentActivity() {
         setupCoilImageLoader()
         handleIncomingIntent(intent)
 
+        /*ViewCompat.setOnApplyWindowInsetsListener(
+            this.window.decorView
+        ) { v: View, insets: WindowInsetsCompat ->
+            val systemBars: androidx.core.graphics.Insets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(0, systemBars.top, 0, 0)
+            insets
+        }*/
+
         setContent {
             val viewModel: SettingsProviderViewModel = koinViewModel()
 
@@ -185,6 +196,7 @@ class MainActivity : ComponentActivity() {
                 ) { innerPadding ->
 
                     val layoutDirection = LocalLayoutDirection.current
+                    val orientationPortrait = LocalConfiguration.current.orientation == Configuration.ORIENTATION_PORTRAIT
 
 
                     CompositionLocalProvider(
@@ -197,13 +209,12 @@ class MainActivity : ComponentActivity() {
 
                         ModalBottomSheetLayout(
                             modifier = Modifier
-                                .padding(
-                                    top = 0.dp,
-                                    bottom = innerPadding.calculateBottomPadding(),
-                                    start = innerPadding.calculateStartPadding(layoutDirection),
-                                    end = innerPadding.calculateEndPadding(layoutDirection),
-                                )
-                                .imePadding(),
+                                .padding(innerPadding.copy(layoutDirection, top = 0.dp))
+                                .imePadding()
+                                .on(orientationPortrait) {
+                                    displayCutoutPadding()
+                                },
+
                             bottomSheetNavigator = bottomSheetNavigator,
                             sheetShape = RoundedCornerShape(16.dp),
                         ) {
