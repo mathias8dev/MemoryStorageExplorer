@@ -11,4 +11,5 @@ class SettingsProviderViewModel(
 ) : ViewModel() {
 
     val appSettings = appSettingsRepository.data
+
 }

@@ -3,10 +3,10 @@ package com.mathias8dev.memoriesstoragexplorer.domain.useCases
 import android.content.Context
 import androidx.annotation.PluralsRes
 import androidx.annotation.StringRes
-import org.koin.core.annotation.Factory
+import org.koin.core.annotation.Single
 
 
-@Factory
+@Single
 class LoadStringResourceUseCase(
     private val context: Context
 ) {

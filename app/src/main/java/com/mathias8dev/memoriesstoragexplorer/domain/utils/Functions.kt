@@ -30,6 +30,10 @@ inline fun <reified T> koinInject(): Lazy<T> {
     return KoinJavaComponent.inject(T::class.java)
 }
 
+inline fun <reified T> koinGet(): T {
+    return KoinJavaComponent.get(T::class.java)
+}
+
 inline fun <reified T> tryOrNull(block: () -> T?): T? {
     return runCatching {
         block()

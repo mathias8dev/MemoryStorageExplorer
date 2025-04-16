@@ -23,6 +23,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.mathias8dev.memoriesstoragexplorer.data.event.BroadcastEvent
 import com.mathias8dev.memoriesstoragexplorer.data.event.EventBus
@@ -30,13 +31,17 @@ import com.mathias8dev.memoriesstoragexplorer.domain.FilterQuery
 import com.mathias8dev.memoriesstoragexplorer.domain.enums.AddMode
 import com.mathias8dev.memoriesstoragexplorer.domain.enums.LayoutMode
 import com.mathias8dev.memoriesstoragexplorer.domain.enums.SortMode
+import com.mathias8dev.memoriesstoragexplorer.ui.composables.mediaGroup.IntExtSlotComposable
+import com.mathias8dev.memoriesstoragexplorer.ui.composables.mediaGroup.MediaGroup
+import com.mathias8dev.memoriesstoragexplorer.ui.composables.mediaGroup.MediaGroupComposable
 import kotlinx.coroutines.launch
 
 
 @Composable
 fun MediaListScreenLayout(
     currentQuery: String? = null,
-    onNavigateToMediaGroup: (MediaGroup) -> Unit,
+    selectedSortMode: SortMode? = null,
+    onNavigateToMediaGroup: (String) -> Unit,
     onFilter: (queries: List<FilterQuery>) -> Unit,
     onSort: (SortMode) -> Unit,
     onReload: () -> Unit,
@@ -84,18 +89,27 @@ fun MediaListScreenLayout(
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
                 MediaGroup.entries.forEach {
-                    MediaGroupComposable(
-                        iconRes = it.iconRes,
-                        colorHex = it.colorHex,
-                        title = it.title,
-                        subTitle = it.path,
-                        onClick = {
+                    if (it != MediaGroup.IntExtSlot) {
+                        MediaGroupComposable(
+                            iconRes = it.iconRes,
+                            colorHex = it.colorHex,
+                            title = stringResource(it.titleRes!!),
+                            subTitle = it.path,
+                            onClick = {
+                                coroutineScope.launch {
+                                    drawerState.close()
+                                    onNavigateToMediaGroup(it.path)
+                                }
+                            }
+                        )
+                    } else {
+                        IntExtSlotComposable {
                             coroutineScope.launch {
                                 drawerState.close()
                                 onNavigateToMediaGroup(it)
                             }
                         }
-                    )
+                    }
                 }
             }
         },
@@ -103,6 +117,7 @@ fun MediaListScreenLayout(
             AnimatedVisibility(visible = showBottomActions) {
                 BottomActionsComposable(
                     searchTerm = currentQuery,
+                    selectedSortMode = selectedSortMode,
                     onFilter = onFilter,
                     onUpdateLayout = onUpdateLayout,
                     onReload = onReload,

@@ -7,7 +7,6 @@ import com.mathias8dev.memoriesstoragexplorer.domain.models.MediaInfo
 import com.mathias8dev.memoriesstoragexplorer.domain.models.toFile
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.otherwise
 import kotlinx.parcelize.Parcelize
-import java.util.Random
 
 private fun compareDirectoriesFirst(first: MediaInfo, second: MediaInfo, comparator: () -> Int): Int {
     val firstFile = first.toFile()
@@ -27,49 +26,70 @@ enum class SortMode(
     val nameRes: Int,
 ) : Parcelable, Comparator<MediaInfo> {
 
-    NAME_AZ(nameRes = R.string.name_az) {
+    NAME_AZ(
+        iconRes = R.drawable.ic_az_sort_ascending,
+        nameRes = R.string.name_az
+    ) {
         override fun compare(first: MediaInfo, second: MediaInfo): Int {
             return compareDirectoriesFirst(first, second) {
                 first.name?.compareTo(second.name.orEmpty()).otherwise(0)
             }
         }
     },
-    NAME_ZA(nameRes = R.string.name_za) {
+    NAME_ZA(
+        iconRes = R.drawable.ic_za_sort_descending,
+        nameRes = R.string.name_za
+    ) {
         override fun compare(first: MediaInfo, second: MediaInfo): Int {
             return compareDirectoriesFirst(first, second) {
                 second.name?.compareTo(first.name.orEmpty()) ?: 0
             }
         }
     },
-    SIZE_SMALLER(nameRes = R.string.size_smaller) {
+    SIZE_SMALLER(
+        iconRes = R.drawable.ic_sort_from_bottom_to_top,
+        nameRes = R.string.size_smaller
+    ) {
         override fun compare(first: MediaInfo, second: MediaInfo): Int {
             return compareDirectoriesFirst(first, second) {
                 first.size.compareTo(second.size)
             }
         }
     },
-    SIZE_BIGGER(nameRes = R.string.size_bigger) {
+    SIZE_BIGGER(
+        iconRes = R.drawable.ic_sort_from_top_to_bottom,
+        nameRes = R.string.size_bigger
+    ) {
         override fun compare(first: MediaInfo, second: MediaInfo): Int {
             return compareDirectoriesFirst(first, second) {
                 second.size.compareTo(first.size)
             }
         }
     },
-    DATE_OLDER(nameRes = R.string.date_older) {
+    DATE_OLDER(
+        iconRes = R.drawable.ic_time_past,
+        nameRes = R.string.date_older
+    ) {
         override fun compare(first: MediaInfo, second: MediaInfo): Int {
             return compareDirectoriesFirst(first, second) {
                 first.toFile()?.lastModified()?.compareTo(second.toFile()?.lastModified().otherwise(0)) ?: 0
             }
         }
     },
-    DATE_NEWER(nameRes = R.string.date_newer) {
+    DATE_NEWER(
+        iconRes = R.drawable.ic_time_forward,
+        nameRes = R.string.date_newer
+    ) {
         override fun compare(first: MediaInfo, second: MediaInfo): Int {
             return compareDirectoriesFirst(first, second) {
                 second.toFile()?.lastModified()?.compareTo(first.toFile()?.lastModified().otherwise(0)) ?: 0
             }
         }
     },
-    TYPE_ASCENDING(nameRes = R.string.type_ascending) {
+    TYPE_ASCENDING(
+        iconRes = R.drawable.ic_puzzle_piece,
+        nameRes = R.string.type_ascending
+    ) {
         override fun compare(first: MediaInfo, second: MediaInfo): Int {
             return compareDirectoriesFirst(first, second) {
                 val extComparison = first.toFile()?.extension?.compareTo(second.toFile()?.extension.orEmpty()) ?: 0
@@ -77,7 +97,10 @@ enum class SortMode(
             }
         }
     },
-    TYPE_DESCENDING(nameRes = R.string.type_descending) {
+    TYPE_DESCENDING(
+        iconRes = R.drawable.ic_puzzle_piece_2,
+        nameRes = R.string.type_descending
+    ) {
         override fun compare(first: MediaInfo, second: MediaInfo): Int {
             return compareDirectoriesFirst(first, second) {
                 val extComparison = second.toFile()?.extension?.compareTo(first.toFile()?.extension.orEmpty()) ?: 0
@@ -85,11 +108,13 @@ enum class SortMode(
             }
         }
     },
-    SHUFFLED(nameRes = R.string.shuffled) {
+    SHUFFLED(
+        iconRes = R.drawable.ic_shuffle,
+        nameRes = R.string.shuffled
+    ) {
         override fun compare(first: MediaInfo, second: MediaInfo): Int {
             return compareDirectoriesFirst(first, second) {
-                val random = Random()
-                random.nextInt(2)
+                listOf(-1, 0, 1).random()
             }
         }
     };

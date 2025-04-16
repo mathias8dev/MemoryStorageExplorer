@@ -55,8 +55,10 @@ import com.mathias8dev.memoriesstoragexplorer.LocalSnackbarHostState
 import com.mathias8dev.memoriesstoragexplorer.R
 import com.mathias8dev.memoriesstoragexplorer.domain.FilterQuery
 import com.mathias8dev.memoriesstoragexplorer.domain.clipboard.ClipboardHandler
+import com.mathias8dev.memoriesstoragexplorer.domain.models.LocalAppSettings
 import com.mathias8dev.memoriesstoragexplorer.domain.models.MediaInfo
 import com.mathias8dev.memoriesstoragexplorer.domain.services.fileCopy.FileExistsAction
+import com.mathias8dev.memoriesstoragexplorer.domain.utils.findActivity
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.onLoading
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.onSuccess
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.ActionMenuCurrentPath
@@ -69,12 +71,12 @@ import com.mathias8dev.memoriesstoragexplorer.ui.composables.ContextMenuComposab
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.FileExistsDialog
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.FileOperationsProgressDialog
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.FullscreenLoadingDialog
-import com.mathias8dev.memoriesstoragexplorer.ui.composables.MediaGroup
-import com.mathias8dev.memoriesstoragexplorer.ui.composables.MediaGroupHomeComposable
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.MediaListScreenLayout
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.MediaPropertiesDialog
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.MediaRenameDialog
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.dialogBackgroundColor
+import com.mathias8dev.memoriesstoragexplorer.ui.composables.mediaGroup.MediaGroup
+import com.mathias8dev.memoriesstoragexplorer.ui.composables.mediaGroup.MediaGroupHomeComposable
 import com.mathias8dev.memoriesstoragexplorer.ui.destinations.SettingsScreenDestination
 import com.mathias8dev.memoriesstoragexplorer.ui.screens.home.BackStackEntry
 import com.mathias8dev.memoriesstoragexplorer.ui.screens.home.ClipboardEntry
@@ -150,6 +152,7 @@ fun MediaListScreen(
 
     val progressMap = clipboardHandler.fileOperationsProgress
     val skippedList = clipboardHandler.skippedOperations
+    val localAppSettings = LocalAppSettings.current
 
     Timber.d("MediaListScreenProgressMap: $progressMap")
 
@@ -197,7 +200,7 @@ fun MediaListScreen(
 
     val currentMediaGroup by remember(currentRootPath) {
         derivedStateOf {
-            MediaGroup.fromPath(currentRootPath).takeIf { it != MediaGroup.InternalStorage }
+            MediaGroup.fromPath(currentRootPath)
         }
     }
 
@@ -308,21 +311,22 @@ fun MediaListScreen(
         -1L
     }
 
+
+
     BackHandler(currentStackSize == 1) {
         coroutineScope.launch {
             val now = System.currentTimeMillis()
             if (now - firstBack <= 3000) {
-                navigator.popBackStack()
+                localContext.findActivity().finish()
             } else {
                 firstBack = now
-                localSnackbarHostState.showSnackbar("Press back again to exit")
+                localSnackbarHostState.showSnackbar(localContext.getString(R.string.press_back_again_to_exit))
             }
         }
     }
 
 
     BackHandler(currentStackSize > 1 || selectedMedia.isNotEmpty()) {
-        Timber.d("BackHandler - isCurrentStackEmpty: $isCurrentStackEmpty, clipboard: $clipboard")
         if (selectedMedia.isEmpty()) viewModel.onPopCurrentBackStack()
         else clipboardHandler.onRemoveAllSelectedMedia()
     }
@@ -343,10 +347,8 @@ fun MediaListScreen(
 
     MediaListScreenLayout(
         currentQuery = searchTerm,
-        onNavigateToMediaGroup = {
-            Timber.d("OnNavigate to media group: $it")
-            viewModel.onMediaGroupClick(it)
-        },
+        selectedSortMode = backStackEntry?.sortMode ?: BackStackEntry.default.sortMode,
+        onNavigateToMediaGroup = viewModel::onMediaGroupClick,
         onAdd = viewModel::onAdd,
         onFilter = viewModel::onFilter,
         onSort = viewModel::onSort,
@@ -615,6 +617,7 @@ fun MediaListScreen(
                             }
                             mediaResponse.onSuccess { mediaList ->
                                 MediaListComposable(
+                                    layoutMode = localAppSettings.layoutMode,
                                     mediaList = mediaList,
                                     currentQuery = searchTerm,
                                     selectedMedia = selectedMedia,

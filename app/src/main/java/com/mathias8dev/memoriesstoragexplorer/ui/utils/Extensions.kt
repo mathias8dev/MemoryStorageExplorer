@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import com.mathias8dev.memoriesstoragexplorer.R
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.GetFileNameUseCase
+import com.mathias8dev.memoriesstoragexplorer.domain.useCases.info.GetSizeFromPathUseCase
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.koinInject
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.tryOrNull
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.SelectedPathView
@@ -35,21 +36,9 @@ import kotlin.math.roundToInt
 val File.mimeData: MimeData?
     get() = runCatching { MimeData.fromFile(this) }.getOrNull()
 
-suspend fun File.asContentSize(): Long {
-    val file = this
-    return withContext(Dispatchers.IO) {
-        if (file.isFile) {
-            file.length()
-        } else {
-            var totalSize = 0L
-            file.walk().forEach { file ->
-                if (file.isFile) {
-                    totalSize += file.length()
-                }
-            }
-            totalSize
-        }
-    }
+suspend fun File.asContentSize(): Long = withContext(Dispatchers.IO) {
+    val getSizeFromPathUseCase by koinInject<GetSizeFromPathUseCase>()
+    getSizeFromPathUseCase.invoke(absolutePath)
 }
 
 suspend fun File.asSelectedPathView(walk: Boolean = false): SelectedPathView? {

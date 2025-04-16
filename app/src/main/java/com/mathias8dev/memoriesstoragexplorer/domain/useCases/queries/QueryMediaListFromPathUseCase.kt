@@ -8,17 +8,17 @@ import android.provider.MediaStore
 import androidx.core.database.getStringOrNull
 import androidx.core.net.toUri
 import com.mathias8dev.memoriesstoragexplorer.domain.models.MediaInfo
-import com.mathias8dev.memoriesstoragexplorer.ui.utils.asContentSize
+import com.mathias8dev.memoriesstoragexplorer.domain.useCases.info.GetSizeFromPathUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.koin.core.annotation.Factory
-import timber.log.Timber
 import java.io.File
 
 
 @Factory
 class QueryMediaListFromPathUseCase(
-    private val context: Context
+    private val context: Context,
+    private val getSizeFromPathUseCase: GetSizeFromPathUseCase
 ) {
 
     suspend fun invoke(path: String): List<MediaInfo> = withContext(Dispatchers.IO) {
@@ -78,12 +78,12 @@ class QueryMediaListFromPathUseCase(
                 )
 
                 val file = File(filePath)
-                Timber.d("The file path is $filePath")
+
 
                 mediaList += MediaInfo(
                     mediaId = id,
                     name = name,
-                    size = if (file.isFile) size else file.asContentSize(),
+                    size = if (file.isFile) size else getSizeFromPathUseCase.invoke(file.absolutePath),
                     contentUri = contentUri,
                     privateContentUri = file.toUri(),
                     bucketName = bucketName,

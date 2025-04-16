@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -25,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -40,31 +42,31 @@ import com.mathias8dev.memoriesstoragexplorer.domain.enums.SortMode
 
 
 enum class BottomAction(
-    @DrawableRes val icon: Int,
+    @DrawableRes val iconRes: Int,
     @StringRes val titleRes: Int
 ) {
     Search(
-        icon = R.drawable.ic_search,
+        iconRes = R.drawable.ic_search,
         titleRes = R.string.search
     ),
     ViewMode(
-        icon = R.drawable.ic_view_mode,
+        iconRes = R.drawable.ic_view_mode,
         titleRes = R.string.view_mode
     ),
     Add(
-        icon = R.drawable.ic_add,
+        iconRes = R.drawable.ic_add,
         titleRes = R.string.add
     ),
     Reload(
-        icon = R.drawable.ic_reload,
+        iconRes = R.drawable.ic_reload,
         titleRes = R.string.reload
     ),
     Sort(
-        icon = R.drawable.ic_sort,
+        iconRes = R.drawable.ic_sort,
         titleRes = R.string.sort
     ),
     Select(
-        icon = R.drawable.ic_select_all,
+        iconRes = R.drawable.ic_select_all,
         titleRes = R.string.select_all
     ),
 
@@ -74,6 +76,7 @@ enum class BottomAction(
 @Composable
 fun BottomActionsComposable(
     searchTerm: String? = null,
+    selectedSortMode: SortMode? = null,
     onFilter: (queries: List<FilterQuery>) -> Unit,
     onSort: (SortMode) -> Unit,
     onReload: () -> Unit,
@@ -193,12 +196,22 @@ fun BottomActionsComposable(
                     )
                 },
                 onDrawActionMenuItem = {
-                    Text(
+                    Row(
                         modifier = Modifier
                             .width(200.dp)
-                            .padding(16.dp),
-                        text = stringResource(it.nameRes),
-                    )
+                            .padding(16.dp)
+                    ) {
+                        it.iconRes?.let { iconRes ->
+                            Icon(
+                                painter = painterResource(iconRes),
+                                contentDescription = stringResource(it.nameRes)
+                            )
+                        }
+                        Text(
+                            modifier = Modifier,
+                            text = stringResource(it.nameRes),
+                        )
+                    }
                 }
             )
             ContextMenuComposable(
@@ -254,19 +267,37 @@ fun BottomActionsComposable(
                 actionToString = { localContext.getString(it.nameRes) },
                 actionHolder = { onHolderClicked ->
                     BottomActionComposable(
-                        action = BottomAction.Sort,
+                        iconRes = selectedSortMode?.iconRes ?: BottomAction.Sort.iconRes,
+                        titleRes = selectedSortMode?.nameRes ?: BottomAction.Sort.titleRes,
                         onClick = {
                             onHolderClicked()
                         }
                     )
                 },
                 onDrawActionMenuItem = {
-                    Text(
+                    Row(
                         modifier = Modifier
-                            .width(200.dp)
+                            .width(216.dp)
+                            .background(
+                                color = if (it == selectedSortMode) MaterialTheme.colorScheme.primary.copy(0.4F)
+                                else Color.Unspecified
+                            )
                             .padding(16.dp),
-                        text = stringResource(it.nameRes),
-                    )
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        it.iconRes?.let { iconRes ->
+                            Icon(
+                                modifier = Modifier.size(20.dp),
+                                painter = painterResource(iconRes),
+                                contentDescription = stringResource(it.nameRes)
+                            )
+                        }
+                        Text(
+                            modifier = Modifier,
+                            text = stringResource(it.nameRes),
+                        )
+                    }
                 }
             )
             BottomActionComposable(
@@ -299,8 +330,26 @@ fun BottomActionComposable(
         onClick = onClick
     ) {
         Icon(
-            painter = painterResource(action.icon),
+            painter = painterResource(action.iconRes),
             contentDescription = stringResource(action.titleRes)
+        )
+    }
+}
+
+@Composable
+fun BottomActionComposable(
+    modifier: Modifier = Modifier,
+    @DrawableRes iconRes: Int,
+    @StringRes titleRes: Int,
+    onClick: () -> Unit
+) {
+    IconButton(
+        modifier = modifier,
+        onClick = onClick
+    ) {
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = stringResource(titleRes)
         )
     }
 }

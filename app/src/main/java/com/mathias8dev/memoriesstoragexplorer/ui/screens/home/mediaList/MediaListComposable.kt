@@ -1,24 +1,32 @@
 package com.mathias8dev.memoriesstoragexplorer.ui.screens.home.mediaList
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.itemsIndexed
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.mathias8dev.memoriesstoragexplorer.data.event.BroadcastEvent
 import com.mathias8dev.memoriesstoragexplorer.data.event.EventBus
+import com.mathias8dev.memoriesstoragexplorer.domain.enums.LayoutMode
 import com.mathias8dev.memoriesstoragexplorer.domain.models.MediaInfo
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.MediaInfoComposable
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.MediaInfoLoadingComposable
-import my.nanihadesuka.compose.LazyColumnScrollbar
+import my.nanihadesuka.compose.LazyVerticalGridScrollbar
 import timber.log.Timber
 
 
@@ -26,6 +34,7 @@ import timber.log.Timber
 fun MediaListComposable(
     modifier: Modifier = Modifier,
     currentQuery: String? = null,
+    layoutMode: LayoutMode = LayoutMode.COLUMNED,
     mediaList: List<MediaInfo>,
     selectedMedia: List<MediaInfo>,
     onMediaClick: (MediaInfo) -> Unit,
@@ -33,20 +42,50 @@ fun MediaListComposable(
 ) {
 
 
-    val listState = rememberLazyListState()
+    val gridState = rememberLazyGridState()
+
+    Timber.d("The layout mode is $layoutMode")
+
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+
+    val itemsCount by remember(layoutMode) {
+        derivedStateOf {
+            when (layoutMode) {
+                LayoutMode.COLUMNED, LayoutMode.COMPACT, LayoutMode.DETAILED, LayoutMode.MINIMAL -> 1
+                LayoutMode.WRAPPED -> 2
+                else -> {
+                    Timber.d("On grid layout; the screenWidthDp = $screenWidthDp")
+                    val it = screenWidthDp / 90
+                    Timber.d("The count is $it")
+                    it
+                }
+            }
+        }
+    }
+
+    Timber.d("The items count is $itemsCount")
+
+    val cells by remember(itemsCount) {
+
+        derivedStateOf {
+            GridCells.Fixed(itemsCount)
+        }
+    }
 
     LaunchedEffect(mediaList, currentQuery) {
         EventBus.publish(BroadcastEvent.HideShowBottomActionsEvent(true))
     }
 
-    LazyColumnScrollbar(state = listState) {
-        LazyColumn(
-            modifier = modifier.padding(top = 16.dp),
-            state = listState
+    LazyVerticalGridScrollbar(state = gridState) {
+        LazyVerticalGrid(
+            modifier = modifier
+                .padding(top = 16.dp),
+            state = gridState,
+            columns = cells,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             itemsIndexed(items = mediaList, key = { _, media -> media.privateContentUri!! }) { _, media ->
-                Modifier
-                    .padding(vertical = 0.25.dp)
                 MediaInfoComposable(
                     modifier = Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null),
                     innerPaddingValues = PaddingValues(vertical = 10.dp, horizontal = 16.dp),
@@ -61,10 +100,10 @@ fun MediaListComposable(
             }
 
             if (mediaList.isEmpty()) {
-                item {
+                item(span = { GridItemSpan(itemsCount) }) {
                     Timber.d("Is empty")
                     NoItemComposable(
-                        modifier = Modifier.fillParentMaxSize()
+                        modifier = Modifier.fillMaxSize()
                     )
                 }
             }

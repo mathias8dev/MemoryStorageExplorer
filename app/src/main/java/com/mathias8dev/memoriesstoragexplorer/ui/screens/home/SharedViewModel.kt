@@ -16,11 +16,14 @@ import androidx.core.net.toFile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mathias8dev.memoriesstoragexplorer.R
+import com.mathias8dev.memoriesstoragexplorer.data.repositories.AppSettingsRepository
 import com.mathias8dev.memoriesstoragexplorer.domain.FilterQuery
 import com.mathias8dev.memoriesstoragexplorer.domain.enums.AddMode
 import com.mathias8dev.memoriesstoragexplorer.domain.enums.LayoutMode
 import com.mathias8dev.memoriesstoragexplorer.domain.enums.SortMode
+import com.mathias8dev.memoriesstoragexplorer.domain.models.AppSettings
 import com.mathias8dev.memoriesstoragexplorer.domain.models.MediaInfo
+import com.mathias8dev.memoriesstoragexplorer.domain.services.AppSettingsService
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.LoadStringResourceUseCase
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.CurrentPathIsStorageVolumePathUseCase
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.GetFileNameUseCase
@@ -46,9 +49,9 @@ import com.mathias8dev.memoriesstoragexplorer.ui.activities.imageViewer.ImageVie
 import com.mathias8dev.memoriesstoragexplorer.ui.activities.mediaPlayer.MediaPlayerActivity
 import com.mathias8dev.memoriesstoragexplorer.ui.activities.pdfViewer.PdfViewerActivity
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.AutoGrowTabController
-import com.mathias8dev.memoriesstoragexplorer.ui.composables.MediaGroup
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.SelectedDiskOverview
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.SelectedPathView
+import com.mathias8dev.memoriesstoragexplorer.ui.composables.mediaGroup.MediaGroup
 import com.mathias8dev.memoriesstoragexplorer.ui.utils.asContentSchemeUri
 import com.mathias8dev.memoriesstoragexplorer.ui.utils.asSelectedPathView
 import com.mathias8dev.memoriesstoragexplorer.ui.utils.isPdfDocument
@@ -65,6 +68,7 @@ import timber.log.Timber
 import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
+import kotlin.time.Duration.Companion.seconds
 
 
 @KoinViewModel
@@ -85,8 +89,9 @@ class SharedViewModel(
     private val currentPathIsStorageVolumePathUseCase: CurrentPathIsStorageVolumePathUseCase,
     private val loadStringResourceUseCase: LoadStringResourceUseCase,
     private val createFileUseCase: FileCreateUseCase,
-    private val createDirectoryUseCase: FileCreateDirectoryUseCase
-) : ViewModel() {
+    private val createDirectoryUseCase: FileCreateDirectoryUseCase,
+    private val appSettingsRepository: AppSettingsRepository,
+) : ViewModel(), AppSettingsService by appSettingsRepository {
 
     private var cachedRootMediaInfo: List<MediaInfo>? = null
 
@@ -126,19 +131,26 @@ class SharedViewModel(
     var currentRootPath by mutableStateOf<String>(defaultStorageRootPath)
         private set
 
+    private var initialized = false
 
     init {
         viewModelScope.launch {
             launch {
                 snapshotFlow { pagerState.currentPage }.collect {
-                    if (previousPage < it) onTabIndexChangedBasedOnSwipe(false)
-                    else onTabIndexChangedBasedOnSwipe(true)
+                    Timber.d("initial collect of pagerState")
+                    if (initialized) {
+                        if (previousPage < it) onTabIndexChangedBasedOnSwipe(false)
+                        else onTabIndexChangedBasedOnSwipe(true)
+                    }
 
                     previousPage = it
                 }
             }
 
+            delay(1.seconds)
+            initialized = true // We don't want the initialization of the pagerState trigger the collect. Since it can false the backstack
         }
+
     }
 
 
@@ -150,6 +162,7 @@ class SharedViewModel(
             Timber.d("backStackEntry: ${backStackEntry.value}")
             onReload(wipeCache = false, force = true)
         }
+
 
     }
 
@@ -178,7 +191,7 @@ class SharedViewModel(
         viewModelScope.launch {
             Timber.d("onTabIndexChangedBasedOnSwipe")
             tabsController.updateTabIndexBasedOnSwipe(isSwipeToLeft)
-            val entry = backStackHolder.getAt(tabIndex.value) ?: BackStackHolder.default
+            val entry = backStackHolder.getAt(tabIndex.value) ?: BackStackEntry.default
             onBackStackEntryChanged(entry = entry)
             Timber.d("backStackEntry: ${backStackEntry.value}")
         }
@@ -211,7 +224,7 @@ class SharedViewModel(
 
     private fun updateSelectedPathView() {
         viewModelScope.launch {
-            MediaGroup.fromPath(currentRootPath).takeIf { it != MediaGroup.InternalStorage }?.let { mediaGroup ->
+            MediaGroup.fromPath(currentRootPath)?.let { mediaGroup ->
                 delay(200)
                 while (_mediaQueryRequestResponse.value !is Resource.Success) {
                     delay(300)
@@ -219,7 +232,7 @@ class SharedViewModel(
                 Timber.d("The media group is $mediaGroup")
                 currentPathBaseStat = SelectedPathView(
                     path = currentRootPath,
-                    name = mediaGroup.title,
+                    name = loadStringResourceUseCase(mediaGroup.titleRes!!),
                     filesCount = if (mediaGroup == MediaGroup.Home) null else _mediaQueryRequestResponse.value.data?.size,
                     foldersCount = if (mediaGroup == MediaGroup.Home) MediaGroup.homeList.size else null
                 )
@@ -237,7 +250,7 @@ class SharedViewModel(
             Timber.d("updateSelectedDiskOverview")
             Timber.d("selectedDiskOverview == null: ${selectedDiskOverview == null}")
             Timber.d("!currentPathIsStorageVolumePath(currentRootPath): ${!currentPathIsStorageVolumePathUseCase(currentRootPath)}")
-            MediaGroup.fromPath(currentRootPath).takeIf { it != MediaGroup.InternalStorage }?.let { mediaGroup ->
+            MediaGroup.fromPath(currentRootPath)?.takeIf { !it.isStorageVolumeGroup() }?.let { mediaGroup ->
                 Timber.d("updateSelectedDiskOverview: $mediaGroup")
                 selectedDiskOverview = null
             }.otherwise {
@@ -260,12 +273,14 @@ class SharedViewModel(
     private fun updateBackStackState() {
         currentStackSize.intValue = backStackHolder.stackSizeAt()
         isCurrentStackEmpty.value = backStackHolder.isStackEmptyAt()
-        _backStackEntry.value = backStackHolder.getAt().otherwise(BackStackHolder.default)
+        _backStackEntry.value = backStackHolder.getAt().otherwise(BackStackEntry.default)
     }
 
     private fun updateTabName() {
         viewModelScope.launch {
-            val name = MediaGroup.fromPath(currentRootPath).takeIf { it != MediaGroup.InternalStorage }?.title.otherwise(getFileNameUseCase(currentRootPath))
+            val name = MediaGroup.fromPath(currentRootPath)
+                ?.titleRes?.let { loadStringResourceUseCase(it) }
+                .otherwise(getFileNameUseCase(currentRootPath))
             tabsController.updateTabNameAt(title = name)
         }
     }
@@ -341,14 +356,14 @@ class SharedViewModel(
 
 
     fun onMediaGroupClick(
-        mediaGroup: MediaGroup
+        mediaGroupPath: String,
     ) {
-        Timber.d("onMediaGroupClick: $mediaGroup")
+        Timber.d("onMediaGroupClick: $mediaGroupPath")
         Timber.d("The current path is $currentRootPath")
-        if (currentRootPath == mediaGroup.path) return
+        if (currentRootPath == mediaGroupPath) return
         onBackStackEntryChanged(
             entry = BackStackEntry(
-                path = mediaGroup.path,
+                path = mediaGroupPath,
             )
         )
     }
@@ -444,7 +459,7 @@ class SharedViewModel(
 
     fun onFilter(queries: List<FilterQuery>) {
         viewModelScope.launch {
-            val entry = (backStackEntry.value ?: BackStackHolder.default).copy(filterQueries = queries)
+            val entry = (backStackEntry.value ?: BackStackEntry.default).copy(filterQueries = queries)
             backStackHolder.updateLastEntryAt(entry = entry)
             onReload(wipeCache = false, force = false)
         }
@@ -452,13 +467,13 @@ class SharedViewModel(
 
     fun onLayout(mode: LayoutMode) {
         viewModelScope.launch {
-
+            onAppSettingsChanged(AppSettings::layoutMode, mode)
         }
     }
 
     fun onSort(sortMode: SortMode) {
         viewModelScope.launch {
-            val entry = (backStackEntry.value ?: BackStackHolder.default).copy(sortMode = sortMode)
+            val entry = (backStackEntry.value ?: BackStackEntry.default).copy(sortMode = sortMode)
             backStackHolder.updateLastEntryAt(entry = entry)
             onReload(wipeCache = false, force = false)
         }
@@ -492,7 +507,7 @@ class SharedViewModel(
 
     private fun loadContentByLastBackStackEntry(force: Boolean = true) {
         viewModelScope.launch {
-            val entry = backStackHolder.getAt().otherwise(BackStackHolder.default)
+            val entry = backStackHolder.getAt().otherwise(BackStackEntry.default)
             if (_mediaQueryRequestResponse.value.isSuccess() && !force) {
                 _mediaQueryRequestResponse.value.data?.let { mediaList ->
                     val filtered = mediaList.filter { mediaInfo -> entry.filterQueries.all { filterQuery -> filterQuery.filter(mediaInfo, false) } }

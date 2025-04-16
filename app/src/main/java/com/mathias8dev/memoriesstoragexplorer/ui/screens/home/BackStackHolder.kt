@@ -1,14 +1,8 @@
 package com.mathias8dev.memoriesstoragexplorer.ui.screens.home
 
-import android.os.Parcelable
 import androidx.collection.mutableScatterMapOf
 import androidx.compose.runtime.mutableIntStateOf
-import com.mathias8dev.memoriesstoragexplorer.domain.FilterQuery
-import com.mathias8dev.memoriesstoragexplorer.domain.enums.SortMode
-import com.mathias8dev.memoriesstoragexplorer.ui.composables.MediaGroup
-import kotlinx.parcelize.Parcelize
 import timber.log.Timber
-import java.util.UUID
 
 
 class BackStackHolder {
@@ -91,20 +85,7 @@ class BackStackHolder {
         return entry
     }
 
-    companion object {
-        val default = BackStackEntry(
-            path = MediaGroup.InternalStorage.path,
-            filterQueries = emptyList(),
-            sortMode = SortMode.NAME_AZ
-        )
-    }
+
 }
 
 
-@Parcelize
-data class BackStackEntry(
-    val uid: String = UUID.randomUUID().toString(),
-    val path: String? = MediaGroup.InternalStorage.path,
-    val filterQueries: List<FilterQuery> = emptyList(),
-    val sortMode: SortMode = SortMode.NAME_AZ,
-) : Parcelable
