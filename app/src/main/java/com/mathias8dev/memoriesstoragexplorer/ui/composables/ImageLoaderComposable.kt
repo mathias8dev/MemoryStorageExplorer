@@ -16,6 +16,7 @@ import coil.compose.SubcomposeAsyncImage
 import coil.compose.SubcomposeAsyncImageScope
 import coil.request.ImageRequest
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.otherwise
+import timber.log.Timber
 
 @Composable
 fun ImageLoaderComposable(
@@ -24,6 +25,8 @@ fun ImageLoaderComposable(
     contentScale: ContentScale = ContentScale.Fit,
     onError: @Composable (SubcomposeAsyncImageScope.(AsyncImagePainter.State.Error) -> Unit)? = null
 ) {
+
+    Timber.d("Loading file ${model.toString()}")
 
     Box(modifier = modifier) {
         SubcomposeAsyncImage(

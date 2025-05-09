@@ -21,7 +21,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -164,9 +163,4 @@ class AutoGrowTabController : RememberCoroutineScopeProvider by RememberCoroutin
                 _tabIndex.value = _tabIndex.value.minus(1).coerceAtLeast(0)
         }
     }
-}
-
-@Composable
-fun rememberAutoGrowTabController(): AutoGrowTabController {
-    return remember { AutoGrowTabController() }
 }

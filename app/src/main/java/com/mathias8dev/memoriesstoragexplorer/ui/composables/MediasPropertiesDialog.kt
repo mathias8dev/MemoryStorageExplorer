@@ -1,5 +1,6 @@
 package com.mathias8dev.memoriesstoragexplorer.ui.composables
 
+import android.content.ClipData
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -32,7 +33,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.ClipEntry
+import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.TextStyle
@@ -47,8 +49,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toFile
 import com.mathias8dev.memoriesstoragexplorer.LocalSnackbarHostState
+import com.mathias8dev.memoriesstoragexplorer.domain.enums.LayoutMode
 import com.mathias8dev.memoriesstoragexplorer.domain.models.MediaInfo
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.toLocalDateTime
+import com.mathias8dev.memoriesstoragexplorer.ui.composables.mediaInfo.MediaInfoComposable
 import com.mathias8dev.memoriesstoragexplorer.ui.screens.settings.isDarkModeActivated
 import com.mathias8dev.memoriesstoragexplorer.ui.utils.toFileFormat
 import com.mathias8dev.memoriesstoragexplorer.ui.utils.toReadableSize
@@ -135,7 +139,7 @@ internal fun MediaPropertiesItem(
                     .weight(1f),
                 mediaInfo = mediaInfo,
                 iconSizeDp = 24.dp,
-                showFullDetails = false,
+                layoutMode = LayoutMode.COMPACT,
                 onClick = {},
             )
 
@@ -289,7 +293,7 @@ internal fun CopiableText(
     style: TextStyle = LocalTextStyle.current
 ) {
 
-    val localClipboardManager = LocalClipboardManager.current
+    val localClipboardManager = LocalClipboard.current
     val localSnackbarHostState = LocalSnackbarHostState.current
     val coroutineScope = rememberCoroutineScope()
 
@@ -313,7 +317,7 @@ internal fun CopiableText(
         style = style,
         onClick = {
             coroutineScope.launch {
-                localClipboardManager.setText(AnnotatedString(text))
+                localClipboardManager.setClipEntry(ClipEntry(ClipData.newPlainText(null, AnnotatedString(text))))
                 localSnackbarHostState.showSnackbar("Copied to clipboard")
             }
         }

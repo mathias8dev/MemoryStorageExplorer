@@ -51,7 +51,7 @@ class QueryAllImagesUseCase(private val context: Context) {
             sortOrder
         )
         query?.use { cursor ->
-            // Cache column indices.
+
             val idColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID)
             val nameColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME)
             val sizeColumn = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.SIZE)

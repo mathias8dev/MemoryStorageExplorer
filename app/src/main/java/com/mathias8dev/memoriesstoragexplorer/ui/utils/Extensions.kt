@@ -95,7 +95,52 @@ fun File.isMusicDirectory(): Boolean {
                     this.name.contains("sound", true) ||
                     this.name.contains("son", true) ||
                     this.name.contains("mp3", true) ||
-                    this.name.contains("alarms", true))
+                    this.name.contains("alarms", true) ||
+                    this.name.contains("podcast", true) ||
+                    this.name.contains("ringtone", true) ||
+                    this.name.contains("recording", true))
+}
+
+fun File.isDocumentDirectory(): Boolean {
+    return this.isDirectory &&
+            (this.name.contains("document", true) ||
+                    this.name.contains("doc", true) ||
+                    this.name.contains("pdf", true) ||
+                    this.name.contains("text", true) ||
+                    this.name.contains("txt", true) ||
+                    this.name.contains("book", true) ||
+                    this.name.contains("ebook", true) ||
+                    this.name.contains("report", true) ||
+                    this.name.contains("file", true) ||
+                    this.name.contains("paper", true))
+}
+
+fun File.isImageDirectory(): Boolean {
+    return this.isDirectory &&
+            (this.name.contains("image", true) ||
+                    this.name.contains("photo", true) ||
+                    this.name.contains("picture", true) ||
+                    this.name.contains("pic", true) ||
+                    this.name.contains("img", true) ||
+                    this.name.contains("camera", true) ||
+                    this.name.contains("gallery", true) ||
+                    this.name.contains("album", true) ||
+                    this.name.contains("screenshot", true))
+}
+
+fun File.isVideoDirectory(): Boolean {
+    return this.isDirectory &&
+            (this.name.contains("video", true) ||
+                    this.name.contains("movie", true) ||
+                    this.name.contains("film", true) ||
+                    this.name.contains("cinema", true) ||
+                    this.name.contains("tv", true) ||
+                    this.name.contains("show", true) ||
+                    this.name.contains("series", true) ||
+                    this.name.contains("clip", true) ||
+                    this.name.contains("youtube", true) ||
+                    this.name.contains("screencast", true) ||
+                    this.name.contains("record", true))
 }
 
 fun String.isWordDocument() = this == MimeSuffix.DOC || this == MimeSuffix.DOCX || this == MimeSuffix.DOCM
@@ -120,8 +165,8 @@ fun File.apkFileIcon(context: Context): Drawable? {
 }
 
 
-fun LocalDateTime.toFileFormat(): String {
-    val formatter = DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm a")
+fun LocalDateTime.toFileFormat(format: String = "dd MMM yyyy, HH:mm a"): String {
+    val formatter = DateTimeFormatter.ofPattern(format)
     return this.format(formatter)
 }
 
@@ -132,8 +177,8 @@ fun File.isImageMimeType(): Boolean {
             this.extension == "jpeg" ||
             this.extension == "bmp" ||
             this.extension == "webp" ||
-            (this.extension == "gif" && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) ||
-            (this.extension == "heif" && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O)
+            (this.extension == "heif" && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) ||
+            (this.extension == "gif" && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P)
 }
 
 fun File.isTextMimeType(): Boolean {
@@ -247,3 +292,12 @@ internal fun PaddingValues.copy(
     end = end ?: calculateEndPadding(layoutDirection),
     bottom = bottom ?: calculateBottomPadding(),
 )
+
+
+@Stable
+fun Modifier.conditional(
+    condition: Boolean,
+    callback: Modifier.() -> Modifier
+): Modifier {
+    return if (condition) callback(this) else this
+}

@@ -37,7 +37,7 @@ fun NoItemComposable(modifier: Modifier = Modifier) {
         Text(
             modifier = Modifier.padding(top = 8.dp),
             text = "No item",
-            color = MaterialTheme.colorScheme.onBackground
+            color = theme.onBackground
         )
     }
 }

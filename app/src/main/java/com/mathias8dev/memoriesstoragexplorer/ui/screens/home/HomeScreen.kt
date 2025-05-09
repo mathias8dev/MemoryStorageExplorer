@@ -12,7 +12,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import com.mathias8dev.memoriesstoragexplorer.ui.permissionRequestUis.StoragePermissionRequestUi
 import com.mathias8dev.memoriesstoragexplorer.ui.screens.mediaList.MediaListScreen
 import com.mathias8dev.permissionhelper.permission.OneShotPermissionsHelper
@@ -32,12 +31,10 @@ fun HomeScreen(
     navigator: DestinationsNavigator
 ) {
 
-    val localContext = LocalContext.current
 
     var showHomeScreenContent by remember {
         mutableStateOf(false)
     }
-
 
     val permissions = remember {
         mutableSetOf<Permission>().apply {
@@ -56,7 +53,6 @@ fun HomeScreen(
             }
         }
     }
-
 
 
 

@@ -77,6 +77,7 @@ enum class BottomAction(
 fun BottomActionsComposable(
     searchTerm: String? = null,
     selectedSortMode: SortMode? = null,
+    selectedLayoutMode: LayoutMode? = null,
     onFilter: (queries: List<FilterQuery>) -> Unit,
     onSort: (SortMode) -> Unit,
     onReload: () -> Unit,
@@ -89,6 +90,7 @@ fun BottomActionsComposable(
     var selectedAction: BottomAction? by rememberSaveable {
         mutableStateOf(null)
     }
+
 
     var termToSearch by rememberSaveable(searchTerm) {
         mutableStateOf(searchTerm.orEmpty())
@@ -185,11 +187,12 @@ fun BottomActionsComposable(
                     selectedAction = null
                     onUpdateLayout(action)
                 },
-                actions = LayoutMode.entries,
+                actions = LayoutMode.withoutGallery(),
                 actionToString = { localContext.getString(it.nameRes) },
                 actionHolder = { onHolderClicked ->
                     BottomActionComposable(
-                        action = BottomAction.ViewMode,
+                        iconRes = selectedLayoutMode?.iconRes ?: BottomAction.ViewMode.iconRes,
+                        titleRes = selectedLayoutMode?.nameRes ?: BottomAction.ViewMode.titleRes,
                         onClick = {
                             onHolderClicked()
                         }
@@ -199,11 +202,19 @@ fun BottomActionsComposable(
                     Row(
                         modifier = Modifier
                             .width(200.dp)
-                            .padding(16.dp)
+                            .background(
+                                color = if (it == selectedLayoutMode) MaterialTheme.colorScheme.primary.copy(0.4F)
+                                else Color.Unspecified
+                            )
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         it.iconRes?.let { iconRes ->
                             Icon(
+                                modifier = Modifier.size(20.dp),
                                 painter = painterResource(iconRes),
+                                tint = MaterialTheme.colorScheme.onBackground,
                                 contentDescription = stringResource(it.nameRes)
                             )
                         }
@@ -340,7 +351,7 @@ fun BottomActionComposable(
 fun BottomActionComposable(
     modifier: Modifier = Modifier,
     @DrawableRes iconRes: Int,
-    @StringRes titleRes: Int,
+    @StringRes titleRes: Int? = null,
     onClick: () -> Unit
 ) {
     IconButton(
@@ -348,8 +359,10 @@ fun BottomActionComposable(
         onClick = onClick
     ) {
         Icon(
+            modifier = Modifier.size(24.dp),
             painter = painterResource(iconRes),
-            contentDescription = stringResource(titleRes)
+            tint = MaterialTheme.colorScheme.onBackground,
+            contentDescription = titleRes?.let { stringResource(titleRes) }
         )
     }
 }

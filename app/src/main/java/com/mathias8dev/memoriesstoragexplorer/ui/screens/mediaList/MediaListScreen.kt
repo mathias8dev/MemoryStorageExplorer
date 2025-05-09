@@ -348,6 +348,7 @@ fun MediaListScreen(
     MediaListScreenLayout(
         currentQuery = searchTerm,
         selectedSortMode = backStackEntry?.sortMode ?: BackStackEntry.default.sortMode,
+        selectedLayoutMode = localAppSettings.layoutMode,
         onNavigateToMediaGroup = viewModel::onMediaGroupClick,
         onAdd = viewModel::onAdd,
         onFilter = viewModel::onFilter,

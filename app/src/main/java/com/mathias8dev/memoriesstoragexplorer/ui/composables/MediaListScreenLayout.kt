@@ -41,6 +41,7 @@ import kotlinx.coroutines.launch
 fun MediaListScreenLayout(
     currentQuery: String? = null,
     selectedSortMode: SortMode? = null,
+    selectedLayoutMode: LayoutMode? = null,
     onNavigateToMediaGroup: (String) -> Unit,
     onFilter: (queries: List<FilterQuery>) -> Unit,
     onSort: (SortMode) -> Unit,
@@ -118,6 +119,7 @@ fun MediaListScreenLayout(
                 BottomActionsComposable(
                     searchTerm = currentQuery,
                     selectedSortMode = selectedSortMode,
+                    selectedLayoutMode = selectedLayoutMode,
                     onFilter = onFilter,
                     onUpdateLayout = onUpdateLayout,
                     onReload = onReload,

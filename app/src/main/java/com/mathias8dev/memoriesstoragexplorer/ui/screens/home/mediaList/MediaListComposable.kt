@@ -1,12 +1,13 @@
 package com.mathias8dev.memoriesstoragexplorer.ui.screens.home.mediaList
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -18,14 +19,15 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import com.mathias8dev.memoriesstoragexplorer.data.event.BroadcastEvent
 import com.mathias8dev.memoriesstoragexplorer.data.event.EventBus
 import com.mathias8dev.memoriesstoragexplorer.domain.enums.LayoutMode
 import com.mathias8dev.memoriesstoragexplorer.domain.models.MediaInfo
-import com.mathias8dev.memoriesstoragexplorer.ui.composables.MediaInfoComposable
-import com.mathias8dev.memoriesstoragexplorer.ui.composables.MediaInfoLoadingComposable
+import com.mathias8dev.memoriesstoragexplorer.ui.composables.mediaInfo.MediaInfoComposable
+import com.mathias8dev.memoriesstoragexplorer.ui.composables.mediaInfo.MediaInfoLoadingComposable
+import com.mathias8dev.memoriesstoragexplorer.ui.utils.pxToDp
 import my.nanihadesuka.compose.LazyVerticalGridScrollbar
 import timber.log.Timber
 
@@ -46,7 +48,7 @@ fun MediaListComposable(
 
     Timber.d("The layout mode is $layoutMode")
 
-    val screenWidthDp = LocalConfiguration.current.screenWidthDp
+    val screenWidthDp = LocalWindowInfo.current.containerSize.width.pxToDp().value.toInt()
 
     val itemsCount by remember(layoutMode) {
         derivedStateOf {
@@ -63,10 +65,8 @@ fun MediaListComposable(
         }
     }
 
-    Timber.d("The items count is $itemsCount")
 
     val cells by remember(itemsCount) {
-
         derivedStateOf {
             GridCells.Fixed(itemsCount)
         }
@@ -76,38 +76,37 @@ fun MediaListComposable(
         EventBus.publish(BroadcastEvent.HideShowBottomActionsEvent(true))
     }
 
-    LazyVerticalGridScrollbar(state = gridState) {
-        LazyVerticalGrid(
-            modifier = modifier
-                .padding(top = 16.dp),
-            state = gridState,
-            columns = cells,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            itemsIndexed(items = mediaList, key = { _, media -> media.privateContentUri!! }) { _, media ->
-                MediaInfoComposable(
-                    modifier = Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null),
-                    innerPaddingValues = PaddingValues(vertical = 10.dp, horizontal = 16.dp),
-                    selected = selectedMedia.find { it == media } != null,
-                    mediaInfo = media,
-                    query = currentQuery,
-                    onClick = {
-                        onMediaClick(media)
-                    },
-                    onLongClick = onMediaLongClick
-                )
-            }
-
-            if (mediaList.isEmpty()) {
-                item(span = { GridItemSpan(itemsCount) }) {
-                    Timber.d("Is empty")
-                    NoItemComposable(
-                        modifier = Modifier.fillMaxSize()
+    AnimatedVisibility(mediaList.isNotEmpty()) {
+        LazyVerticalGridScrollbar(state = gridState) {
+            LazyVerticalGrid(
+                modifier = modifier
+                    .padding(top = 16.dp),
+                state = gridState,
+                columns = cells,
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                itemsIndexed(items = mediaList, key = { _, media -> media.privateContentUri!! }) { _, media ->
+                    MediaInfoComposable(
+                        modifier = Modifier
+                            .height(IntrinsicSize.Max)
+                            .animateItem(),
+                        layoutMode = layoutMode,
+                        selected = selectedMedia.find { it == media } != null,
+                        mediaInfo = media,
+                        query = currentQuery,
+                        onClick = {
+                            onMediaClick(media)
+                        },
+                        onLongClick = onMediaLongClick
                     )
                 }
             }
         }
+    }
+
+    AnimatedVisibility(mediaList.isEmpty()) {
+        NoItemComposable()
     }
 }
 

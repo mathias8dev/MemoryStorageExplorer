@@ -10,11 +10,15 @@ enum class LayoutMode(
     @DrawableRes val iconRes: Int? = null,
     val nameRes: Int,
 ) : Parcelable {
-    COMPACT(nameRes = R.string.compact),
-    COLUMNED(nameRes = R.string.columned),
-    DETAILED(nameRes = R.string.detailed),
-    WRAPPED(nameRes = R.string.wrapped),
-    MINIMAL(nameRes = R.string.minimal),
-    GRID(nameRes = R.string.grid),
-    GALLERY(nameRes = R.string.gallery),
+    COMPACT(iconRes = R.drawable.ic_view_compact, nameRes = R.string.compact),
+    COLUMNED(iconRes = R.drawable.ic_view_columned, nameRes = R.string.columned),
+    DETAILED(iconRes = R.drawable.ic_view_detailed, nameRes = R.string.detailed),
+    WRAPPED(iconRes = R.drawable.ic_view_wrapped, nameRes = R.string.wrapped),
+    MINIMAL(iconRes = R.drawable.ic_view_minimal, nameRes = R.string.minimal),
+    GRID(iconRes = R.drawable.ic_view_grid, nameRes = R.string.grid),
+    GALLERY(iconRes = R.drawable.ic_view_gallery, nameRes = R.string.gallery), ;
+
+    companion object {
+        fun withoutGallery() = entries.filter { it != GALLERY }
+    }
 }
