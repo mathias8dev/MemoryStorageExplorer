@@ -8,9 +8,6 @@ import android.os.storage.StorageManager
 import androidx.annotation.StringRes
 import com.mathias8dev.memoriesstoragexplorer.BuildConfig
 import com.mathias8dev.memoriesstoragexplorer.domain.models.SemanticVersion
-import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.GetFileNameUseCase
-import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.absolutePathOrNull
-import kotlinx.coroutines.runBlocking
 
 object Utils {
     val appPlayStoreDownloadUrl: String
@@ -57,17 +54,6 @@ object Utils {
         return context.getSystemService(Context.STORAGE_SERVICE) as StorageManager
     }
 
-    fun getStorageVolumes(context: Context = koinGet<Context>()): List<String> {
-        return getStorageManager(context)
-            .storageVolumes.mapNotNull {
-                it.absolutePathOrNull()
-            }
-    }
-
-    fun getFileName(path: String): String {
-        val getFileNameUseCase = koinGet<GetFileNameUseCase>()
-        return runBlocking { getFileNameUseCase(path) }
-    }
 
     fun getStringRes(context: Context = koinGet(), @StringRes resId: Int): String {
         return context.getString(resId)

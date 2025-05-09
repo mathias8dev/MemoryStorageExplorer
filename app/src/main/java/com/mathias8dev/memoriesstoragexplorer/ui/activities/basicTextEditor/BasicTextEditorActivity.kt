@@ -36,11 +36,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mathias8dev.memoriesstoragexplorer.SettingsProviderViewModel
 import com.mathias8dev.memoriesstoragexplorer.domain.models.AppSettings
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.SaveTextToUriUseCase
-import com.mathias8dev.memoriesstoragexplorer.domain.utils.koinInject
 import com.mathias8dev.memoriesstoragexplorer.ui.activities.basicTextEditor.components.BasicTextEditorComposable
 import com.mathias8dev.memoriesstoragexplorer.ui.theme.MemoriesStorageExplorerTheme
 import kotlinx.coroutines.launch
 import org.koin.androidx.compose.koinViewModel
+import org.koin.compose.koinInject
 import timber.log.Timber
 
 class BasicTextEditorActivity : ComponentActivity() {
@@ -56,7 +56,7 @@ class BasicTextEditorActivity : ComponentActivity() {
         setContent {
             val viewModel: SettingsProviderViewModel = koinViewModel()
             val appSettings by viewModel.appSettings.collectAsStateWithLifecycle(AppSettings())
-            val saveTextToUriUseCase by koinInject<SaveTextToUriUseCase>()
+            val saveTextToUriUseCase = koinInject<SaveTextToUriUseCase>()
 
             var updatedTextContent by remember { mutableStateOf("") }
             val coroutineScope = rememberCoroutineScope()

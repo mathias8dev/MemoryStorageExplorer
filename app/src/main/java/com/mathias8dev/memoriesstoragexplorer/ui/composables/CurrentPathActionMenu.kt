@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.StorageVolumeOverview
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.otherwise
 
 data class SelectedPathView(
@@ -42,7 +43,7 @@ data class SelectedPathView(
 fun ActionMenuCurrentPath(
     modifier: Modifier = Modifier,
     view: SelectedPathView,
-    selectedDiskOverview: SelectedDiskOverview? = null,
+    storageVolumeOverview: StorageVolumeOverview? = null,
     contentOtherwise: @Composable (ColumnScope.() -> Unit)? = null
 ) {
 
@@ -104,7 +105,7 @@ fun ActionMenuCurrentPath(
                         }
                     }
                 }
-                selectedDiskOverview?.let {
+                storageVolumeOverview?.let {
                     Icon(
                         modifier = Modifier.rotate(rotationDegrees),
                         imageVector = Icons.Default.ArrowDropDown,
@@ -114,8 +115,8 @@ fun ActionMenuCurrentPath(
             }
         },
         onDrawMenu = {
-            selectedDiskOverview?.let {
-                SelectedDiskOverviewComposable(
+            storageVolumeOverview?.let {
+                StorageVolumeOverviewComposable(
                     selectedDiskOverview = it,
                 )
             }.otherwise {

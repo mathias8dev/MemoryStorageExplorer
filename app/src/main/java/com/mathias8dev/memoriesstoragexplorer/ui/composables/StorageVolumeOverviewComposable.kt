@@ -1,10 +1,5 @@
 package com.mathias8dev.memoriesstoragexplorer.ui.composables
 
-import android.content.Context
-import android.os.Environment
-import android.os.Parcelable
-import android.os.StatFs
-import android.os.storage.StorageManager
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,75 +16,17 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.StorageVolumeOverview
 import com.mathias8dev.memoriesstoragexplorer.ui.utils.asFileReadableSize
-import kotlinx.parcelize.Parcelize
-import java.io.File
 
-
-fun deriveSelectedDiskOverview(context: Context, path: String, lastSeenPath: String = path): SelectedDiskOverview {
-    val file = File(path)
-
-    // Get the storage stats
-    val statFs = StatFs(file.absolutePath)
-
-    // Retrieve sizes
-    val blockSize = statFs.blockSizeLong
-    val totalBlocks = statFs.blockCountLong
-    val availableBlocks = statFs.availableBlocksLong
-
-    // Calculate sizes
-    val totalSize = totalBlocks * blockSize
-    val freeSize = availableBlocks * blockSize
-    val usedSize = totalSize - freeSize
-
-    // Use StorageManager to retrieve storage information
-    val storageManager = context.getSystemService(Context.STORAGE_SERVICE) as StorageManager
-    val storageVolume = storageManager.getStorageVolume(file)
-
-    // Retrieve the storage device (e.g., /dev/fuse)
-    val devicePath = storageVolume?.uuid ?: "/dev/fuse" // Assuming FUSE if no UUID
-
-    // Check if it's a FUSE file system
-    val type = when (devicePath) {
-        "/dev/fuse" -> "fuse"
-        else -> if (Environment.isExternalStorageEmulated(file)) "Emulated" else "Physical"
-    }
-
-    // Set the name of the storage volume (e.g., "SD Card" or "Internal storage")
-    val name = storageVolume?.getDescription(context) ?: "Unknown Storage"
-
-    return SelectedDiskOverview(
-        name = name,
-        mountPoint = file.absolutePath,
-        totalSize = totalSize,
-        usedSize = usedSize,
-        freeSize = freeSize,
-        type = type,
-        device = devicePath,
-        lastSeenPath = lastSeenPath
-    )
-}
-
-
-@Parcelize
-data class SelectedDiskOverview(
-    val name: String = "Internal storage",
-    val mountPoint: String,
-    val totalSize: Long,
-    val usedSize: Long,
-    val freeSize: Long,
-    val type: String? = null,
-    val device: String? = null,
-    val lastSeenPath: String? = null,
-    val lastSeenPathName: String? = null
-) : Parcelable
 
 @Composable
-fun SelectedDiskOverviewComposable(
+fun StorageVolumeOverviewComposable(
     modifier: Modifier = Modifier,
-    selectedDiskOverview: SelectedDiskOverview
+    selectedDiskOverview: StorageVolumeOverview
 ) {
     val state by rememberUpdatedState(selectedDiskOverview)
     Column(
@@ -168,4 +105,20 @@ fun SelectedDiskOverviewComposable(
             }
         }
     }
+}
+
+
+@Preview
+@Composable
+private fun StorageOverviewComposablePreview() {
+    StorageVolumeOverviewComposable(
+        selectedDiskOverview = StorageVolumeOverview(
+            name = "Internal storage",
+            mountPoint = "/storage/emulated/0",
+            totalSize = 1024 * 1024 * 1024,
+            usedSize = 1024 * 1024 * 1024,
+            freeSize = 1024 * 1024 * 1024,
+        )
+    )
+
 }

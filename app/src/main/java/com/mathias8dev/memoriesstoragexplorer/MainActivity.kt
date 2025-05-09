@@ -172,8 +172,6 @@ class MainActivity : ComponentActivity() {
             insets
         }*/
 
-        val hasSdcard = Utils.hasRemovableSdCard(this)
-        Timber.d("HasSdCard = $hasSdcard")
 
         val volumes = Utils.getStorageManager(this).storageVolumes
         Timber.d("The volumes are $volumes")

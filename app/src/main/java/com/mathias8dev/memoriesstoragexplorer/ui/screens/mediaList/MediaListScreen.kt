@@ -146,7 +146,7 @@ fun MediaListScreen(
     val currentStackSize by viewModel.currentStackSize
     val tabIndex = viewModel.tabIndex.collectAsStateWithLifecycle()
     val backStackEntry by viewModel.backStackEntry.collectAsStateWithLifecycle()
-    val selectedDiskOverview = viewModel.selectedDiskOverview
+    val selectedDiskOverview = viewModel.selectedVolumeOverview
     val currentRootPathView = viewModel.currentPathBaseStat
     val currentRootPath = viewModel.currentRootPath
 
@@ -368,7 +368,7 @@ fun MediaListScreen(
                         if (currentRootPathView != null) {
                             ActionMenuCurrentPath(
                                 view = currentRootPathView,
-                                selectedDiskOverview = selectedDiskOverview
+                                storageVolumeOverview = selectedDiskOverview
                             )
                         }
                     }

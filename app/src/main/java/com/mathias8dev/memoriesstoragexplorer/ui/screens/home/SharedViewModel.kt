@@ -27,7 +27,8 @@ import com.mathias8dev.memoriesstoragexplorer.domain.services.AppSettingsService
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.LoadStringResourceUseCase
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.CurrentPathIsStorageVolumePathUseCase
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.GetFileNameUseCase
-import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.GetSelectedDiskOverviewUseCase
+import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.GetStorageVolumeOverviewUseCase
+import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.StorageVolumeOverview
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.fileOperations.FileCreateDirectoryUseCase
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.fileOperations.FileCreateUseCase
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.queries.QueryAllApksUseCase
@@ -49,7 +50,6 @@ import com.mathias8dev.memoriesstoragexplorer.ui.activities.imageViewer.ImageVie
 import com.mathias8dev.memoriesstoragexplorer.ui.activities.mediaPlayer.MediaPlayerActivity
 import com.mathias8dev.memoriesstoragexplorer.ui.activities.pdfViewer.PdfViewerActivity
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.AutoGrowTabController
-import com.mathias8dev.memoriesstoragexplorer.ui.composables.SelectedDiskOverview
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.SelectedPathView
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.mediaGroup.MediaGroup
 import com.mathias8dev.memoriesstoragexplorer.ui.utils.asContentSchemeUri
@@ -84,7 +84,7 @@ class SharedViewModel(
     private val queryAllApksUseCase: QueryAllApksUseCase,
     private val queryAllFromRecycleBinUseCase: QueryAllFromRecycleBinUseCase,
     private val queryInstalledApps: QueryInstalledAppsUseCase,
-    private val getSelectedDiskOverviewUseCase: GetSelectedDiskOverviewUseCase,
+    private val getStorageVolumeOverviewUseCase: GetStorageVolumeOverviewUseCase,
     private val getFileNameUseCase: GetFileNameUseCase,
     private val currentPathIsStorageVolumePathUseCase: CurrentPathIsStorageVolumePathUseCase,
     private val loadStringResourceUseCase: LoadStringResourceUseCase,
@@ -124,7 +124,7 @@ class SharedViewModel(
     val effect = _effect.asSharedFlow()
 
 
-    var selectedDiskOverview by mutableStateOf<SelectedDiskOverview?>(null)
+    var selectedVolumeOverview by mutableStateOf<StorageVolumeOverview?>(null)
         private set
     var currentPathBaseStat by mutableStateOf<SelectedPathView?>(null)
         private set
@@ -213,7 +213,7 @@ class SharedViewModel(
             updateBackStackState()
             updateRootPath()
             updateSelectedPathView()
-            updateSelectedDiskOverview()
+            updateStorageOverview()
             updateTabName()
         }
     }
@@ -245,25 +245,25 @@ class SharedViewModel(
         }
     }
 
-    private fun updateSelectedDiskOverview() {
+    private fun updateStorageOverview() {
         viewModelScope.launch {
-            Timber.d("updateSelectedDiskOverview")
-            Timber.d("selectedDiskOverview == null: ${selectedDiskOverview == null}")
+            Timber.d("updateStorageOverview")
+            Timber.d("selectedDiskOverview == null: ${selectedVolumeOverview == null}")
             Timber.d("!currentPathIsStorageVolumePath(currentRootPath): ${!currentPathIsStorageVolumePathUseCase(currentRootPath)}")
             MediaGroup.fromPath(currentRootPath)?.takeIf { !it.isStorageVolumeGroup() }?.let { mediaGroup ->
-                Timber.d("updateSelectedDiskOverview: $mediaGroup")
-                selectedDiskOverview = null
+                Timber.d("updateStorageOverview: $mediaGroup")
+                selectedVolumeOverview = null
             }.otherwise {
                 val currentPathIsNotStorageVolumePath = !currentPathIsStorageVolumePathUseCase(currentRootPath)
                 val lastPoppedPath = backStackHolder.lastPoppedAt()?.path
                 val lastSeenPath = if (currentPathIsNotStorageVolumePath) currentRootPath else lastPoppedPath
-                if (selectedDiskOverview == null || currentPathIsNotStorageVolumePath) {
-                    val overview = getSelectedDiskOverviewUseCase.invoke(
+                if (selectedVolumeOverview == null || currentPathIsNotStorageVolumePath) {
+                    val overview = getStorageVolumeOverviewUseCase.invoke(
                         currentPath = currentRootPath,
                         lastSeenPath = lastSeenPath
                     )
-                    selectedDiskOverview = overview
-                    Timber.d("SelectedDiskOverview: $overview")
+                    selectedVolumeOverview = overview
+                    Timber.d("StorageOverview: $overview")
                 }
             }
 

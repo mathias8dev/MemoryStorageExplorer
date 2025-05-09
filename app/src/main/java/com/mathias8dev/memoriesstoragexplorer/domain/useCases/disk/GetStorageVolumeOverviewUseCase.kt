@@ -2,30 +2,49 @@ package com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk
 
 import android.content.Context
 import android.os.Environment
+import android.os.Parcelable
 import android.os.StatFs
 import android.os.storage.StorageManager
-import com.mathias8dev.memoriesstoragexplorer.ui.composables.SelectedDiskOverview
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.parcelize.Parcelize
 import org.koin.core.annotation.Factory
 import timber.log.Timber
 import java.io.File
 
 
+@Parcelize
+data class StorageVolumeOverview(
+    val name: String = "Internal storage",
+    val mountPoint: String,
+    val path: String = mountPoint,
+    val totalSize: Long,
+    val usedSize: Long,
+    val freeSize: Long,
+    val type: String? = null,
+    val device: String? = null,
+    val isRemovable: Boolean? = null,
+    val isPrimary: Boolean? = null,
+    val isEmulated: Boolean? = null,
+    val lastSeenPath: String? = null,
+    val lastSeenPathName: String? = null
+) : Parcelable
+
+
 @Factory
-class GetSelectedDiskOverviewUseCase(
+class GetStorageVolumeOverviewUseCase(
     private val context: Context,
     private val currentPathIsStorageVolumePath: CurrentPathIsStorageVolumePathUseCase,
-    private val getFileNameUseCase: GetFileNameUseCase
+    private val getFileNameUseCase: GetFileNameUseCase,
 ) {
     suspend operator fun invoke(
         currentPath: String,
         lastSeenPath: String? = null
-    ): SelectedDiskOverview = withContext(Dispatchers.IO) {
-        deriveSelectedDiskOverview(context, currentPath, lastSeenPath)
+    ): StorageVolumeOverview = withContext(Dispatchers.IO) {
+        deriveStorageOverview(context, currentPath, lastSeenPath)
     }
 
-    private suspend fun deriveSelectedDiskOverview(context: Context, path: String, lastSeenPath: String? = null): SelectedDiskOverview {
+    private suspend fun deriveStorageOverview(context: Context, path: String, lastSeenPath: String? = null): StorageVolumeOverview {
         val file = File(path)
 
         // Get the storage stats
@@ -62,7 +81,7 @@ class GetSelectedDiskOverviewUseCase(
 
         Timber.d("The mount point is $mountPoint")
 
-        return SelectedDiskOverview(
+        return StorageVolumeOverview(
             name = name,
             mountPoint = mountPoint,
             totalSize = totalSize,

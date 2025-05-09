@@ -4,7 +4,6 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -22,42 +21,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mathias8dev.memoriesstoragexplorer.R
-import com.mathias8dev.memoriesstoragexplorer.domain.useCases.info.InternalStorageFilesInfoUseCase
-import com.mathias8dev.memoriesstoragexplorer.domain.utils.Utils
-import com.mathias8dev.memoriesstoragexplorer.ui.utils.asFileReadableSize
-import org.koin.compose.koinInject
-
-@Composable
-fun MediaGroupComposable2(
-    icon: @Composable (ColumnScope.() -> Unit)? = null,
-    title: String,
-    subTitle: @Composable (ColumnScope.() -> Unit)? = null,
-    onClick: () -> Unit = {},
-) {
-    Row(
-        modifier = Modifier
-            .clickable { onClick() }
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        icon?.let {
-            Card {
-                it()
-            }
-        }
-
-        Column {
-            Text(
-                text = title,
-                lineHeight = 18.sp
-            )
-            subTitle?.invoke(this)
-        }
-    }
-}
 
 
 @Composable
@@ -66,6 +29,7 @@ fun MediaGroupComposable(
     colorHex: Long? = null,
     title: String,
     subTitle: String? = null,
+    slot: @Composable (() -> Unit)? = null,
     onClick: () -> Unit = {},
 ) {
     Row(
@@ -106,6 +70,7 @@ fun MediaGroupComposable(
                     lineHeight = 18.sp
                 )
             }
+            slot?.invoke()
         }
     }
 }
@@ -117,6 +82,7 @@ fun MediaGroupComposable(
     colorHex: Long? = null,
     title: String,
     subTitle: (suspend () -> String?)? = null,
+    slot: @Composable (() -> Unit)? = null,
     onClick: () -> Unit = {},
 ) {
     val subtitle by produceState<String?>(".....") {
@@ -128,33 +94,7 @@ fun MediaGroupComposable(
         colorHex = colorHex,
         title = title,
         subTitle = subtitle,
+        slot = slot,
         onClick = onClick
     )
-}
-
-@Composable
-fun IntExtSlotComposable(
-    usePathSubtitle: Boolean = true,
-    onVolumeClick: (String) -> Unit = {}
-) {
-    val useCase = koinInject<InternalStorageFilesInfoUseCase>()
-    Column {
-        Utils.getStorageVolumes().map { path ->
-
-            MediaGroupComposable(
-                iconRes = R.drawable.ic_stay_primary_portrait,
-                colorHex = 0xFFFCA311,
-                title = Utils.getFileName(path),
-                subTitle = {
-                    if (usePathSubtitle) {
-                        path
-                    } else {
-                        val (count, size) = useCase.invoke()
-                        "${size.asFileReadableSize()} | $count"
-                    }
-                },
-                onClick = { onVolumeClick(path) }
-            )
-        }
-    }
 }

@@ -37,7 +37,6 @@ import com.mathias8dev.memoriesstoragexplorer.domain.models.MediaInfo
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.queries.QueryFirstMediaInfoUseCase
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.Resource
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.data
-import com.mathias8dev.memoriesstoragexplorer.domain.utils.koinInject
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.HighlightText
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.ImageLoaderComposable
 import com.mathias8dev.memoriesstoragexplorer.ui.utils.isDocumentDirectory
@@ -48,6 +47,7 @@ import com.mathias8dev.memoriesstoragexplorer.ui.utils.mimeData
 import com.mathias8dev.memoriesstoragexplorer.ui.utils.toFileFormat
 import com.mathias8dev.memoriesstoragexplorer.ui.utils.toIconResource
 import com.mathias8dev.memoriesstoragexplorer.ui.utils.toReadableSize
+import org.koin.compose.koinInject
 import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
@@ -113,7 +113,7 @@ fun FileIcon(
         }
 
         if (file.isDirectory) {
-            val getFirstImageMediaInfoUseCase by koinInject<QueryFirstMediaInfoUseCase>()
+            val getFirstImageMediaInfoUseCase = koinInject<QueryFirstMediaInfoUseCase>()
             val modelResource by produceResourceState {
                 when {
                     file.isMusicDirectory() -> R.drawable.ic_music_icon
