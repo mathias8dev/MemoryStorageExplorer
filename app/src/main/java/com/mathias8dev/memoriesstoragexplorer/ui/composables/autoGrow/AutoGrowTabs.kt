@@ -1,4 +1,4 @@
-package com.mathias8dev.memoriesstoragexplorer.ui.composables
+package com.mathias8dev.memoriesstoragexplorer.ui.composables.autoGrow
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,7 +20,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,14 +28,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.mathias8dev.memoriesstoragexplorer.domain.utils.RememberCoroutineScopeOwner
-import com.mathias8dev.memoriesstoragexplorer.domain.utils.RememberCoroutineScopeProvider
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
-import org.koin.core.annotation.Factory
-import java.util.UUID
 
 
 @Composable
@@ -111,56 +102,6 @@ fun <T> AutoGrowTabs(
                     }
                 }
             }
-        }
-    }
-}
-
-data class AutoGrowTab(
-    val title: String,
-    val id: String = UUID.randomUUID().toString()
-)
-
-
-@Factory
-class AutoGrowTabController : RememberCoroutineScopeProvider by RememberCoroutineScopeOwner() {
-
-    private val _tabIndex: MutableStateFlow<Int> = MutableStateFlow(0)
-    val tabIndex: StateFlow<Int> = _tabIndex
-    private val _tabs = mutableStateListOf(
-        AutoGrowTab("Generic 0"),
-    )
-    val tabs: List<AutoGrowTab> = _tabs
-
-
-    suspend fun updateTabIndexBasedOnSwipe(isSwipeToLeft: Boolean = false) = coroutineScope {
-        _tabIndex.value = when (isSwipeToLeft) {
-            true -> _tabIndex.value.minus(1).coerceAtLeast(0)
-            false -> _tabIndex.value.plus(1)
-        }
-        if (_tabIndex.value > tabs.size - 1) {
-            _tabs.add(
-                AutoGrowTab(
-                    title = "Generic ${tabs.size}"
-                )
-            )
-        }
-    }
-
-    suspend fun updateTabIndex(i: Int) = coroutineScope {
-        _tabIndex.value = i
-    }
-
-    suspend fun updateTabNameAt(index: Int = tabIndex.value, title: String) = coroutineScope {
-        coroutineScope.launch {
-            _tabs[index] = AutoGrowTab(title = title, id = _tabs[index].id)
-        }
-    }
-
-    suspend fun removeTabAt(index: Int) = coroutineScope {
-        coroutineScope.launch {
-            _tabs.removeAt(index)
-            if (index <= tabIndex.value)
-                _tabIndex.value = _tabIndex.value.minus(1).coerceAtLeast(0)
         }
     }
 }

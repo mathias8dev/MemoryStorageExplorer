@@ -25,7 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mathias8dev.memoriesstoragexplorer.SettingsProviderViewModel
 import com.mathias8dev.memoriesstoragexplorer.domain.models.AppSettings
-import com.mathias8dev.memoriesstoragexplorer.ui.composables.ImageViewerComposable
+import com.mathias8dev.memoriesstoragexplorer.ui.composables.viewer.ImageViewerComposable
 import com.mathias8dev.memoriesstoragexplorer.ui.theme.MemoriesStorageExplorerTheme
 import org.koin.androidx.compose.koinViewModel
 

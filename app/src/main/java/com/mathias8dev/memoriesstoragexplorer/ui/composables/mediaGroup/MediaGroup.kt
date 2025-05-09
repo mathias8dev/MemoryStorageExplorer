@@ -4,8 +4,6 @@ import android.os.Parcelable
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import com.mathias8dev.memoriesstoragexplorer.R
-import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.absolutePathOrNull
-import com.mathias8dev.memoriesstoragexplorer.domain.utils.Utils
 import kotlinx.parcelize.Parcelize
 
 @Parcelize
@@ -122,9 +120,6 @@ enum class MediaGroup(
         )
     }
 
-    fun isStorageVolumeGroup(): Boolean {
-        return Utils.getStorageManager().storageVolumes.firstOrNull { it.absolutePathOrNull() == path } != null
-    }
 
     override fun toString(): String {
         return "MediaGroup(title='$titleRes', path='$path')"

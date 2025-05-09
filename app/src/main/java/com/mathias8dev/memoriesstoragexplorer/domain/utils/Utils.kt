@@ -4,8 +4,6 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
-import android.os.storage.StorageManager
-import androidx.annotation.StringRes
 import com.mathias8dev.memoriesstoragexplorer.BuildConfig
 import com.mathias8dev.memoriesstoragexplorer.domain.models.SemanticVersion
 
@@ -45,18 +43,5 @@ object Utils {
         return false
     }
 
-
-    fun hasRemovableSdCard(context: Context = koinGet<Context>()): Boolean {
-        return getStorageManager(context).storageVolumes.any { it.isRemovable }
-    }
-
-    fun getStorageManager(context: Context = koinGet<Context>()): StorageManager {
-        return context.getSystemService(Context.STORAGE_SERVICE) as StorageManager
-    }
-
-
-    fun getStringRes(context: Context = koinGet(), @StringRes resId: Int): String {
-        return context.getString(resId)
-    }
 
 }

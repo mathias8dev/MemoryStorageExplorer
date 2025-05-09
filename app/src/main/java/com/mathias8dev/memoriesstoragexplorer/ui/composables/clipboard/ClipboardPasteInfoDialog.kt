@@ -1,4 +1,4 @@
-package com.mathias8dev.memoriesstoragexplorer.ui.composables
+package com.mathias8dev.memoriesstoragexplorer.ui.composables.clipboard
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
@@ -20,6 +20,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toFile
+import com.mathias8dev.memoriesstoragexplorer.ui.composables.StandardDialog
 import com.mathias8dev.memoriesstoragexplorer.ui.screens.home.ClipboardEntry
 
 

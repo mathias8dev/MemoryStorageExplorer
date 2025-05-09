@@ -49,8 +49,6 @@ import com.mathias8dev.memoriesstoragexplorer.domain.clipboard.ClipboardHandler
 import com.mathias8dev.memoriesstoragexplorer.domain.clipboard.ClipboardHandlerImpl
 import com.mathias8dev.memoriesstoragexplorer.domain.models.AppSettings
 import com.mathias8dev.memoriesstoragexplorer.domain.models.LocalAppSettings
-import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.absolutePathOrNull
-import com.mathias8dev.memoriesstoragexplorer.domain.utils.Utils
 import com.mathias8dev.memoriesstoragexplorer.ui.NavGraphs
 import com.mathias8dev.memoriesstoragexplorer.ui.services.fileOperations.ClipboardExecutor
 import com.mathias8dev.memoriesstoragexplorer.ui.services.fileOperations.FileOperationsAndroidService
@@ -172,13 +170,6 @@ class MainActivity : ComponentActivity() {
             insets
         }*/
 
-
-        val volumes = Utils.getStorageManager(this).storageVolumes
-        Timber.d("The volumes are $volumes")
-        for (volume in volumes) {
-            Timber.d("The volume 's absolute path is ${volume.absolutePathOrNull()}")
-            Timber.d("The volume is ${volume.getDescription(this)}")
-        }
 
         setContent {
             val viewModel: SettingsProviderViewModel = koinViewModel()

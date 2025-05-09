@@ -1,9 +1,7 @@
-package com.mathias8dev.memoriesstoragexplorer.ui.composables
+package com.mathias8dev.memoriesstoragexplorer.ui.composables.contextMenu
 
 import android.content.res.Configuration
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.WindowInsets
@@ -208,22 +206,6 @@ fun <T> ContextMenuComposable(
                 }
             }
         }
-    }
-}
-
-@Composable
-fun ActionMenuItem(
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit,
-    content: @Composable BoxScope.() -> Unit
-) {
-
-    Box(
-        modifier = Modifier
-            .clickable { onClick() }
-            .then(modifier)
-    ) {
-        content()
     }
 }
 

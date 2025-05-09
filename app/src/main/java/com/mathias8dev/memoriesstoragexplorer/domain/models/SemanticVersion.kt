@@ -35,4 +35,8 @@ data class SemanticVersion(
             }
         }
     }
+
+    override fun toString(): String {
+        return "$major.$minor.$patch"
+    }
 }

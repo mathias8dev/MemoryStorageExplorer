@@ -49,8 +49,8 @@ import com.mathias8dev.memoriesstoragexplorer.domain.utils.otherwise
 import com.mathias8dev.memoriesstoragexplorer.ui.activities.imageViewer.ImageViewerActivity
 import com.mathias8dev.memoriesstoragexplorer.ui.activities.mediaPlayer.MediaPlayerActivity
 import com.mathias8dev.memoriesstoragexplorer.ui.activities.pdfViewer.PdfViewerActivity
-import com.mathias8dev.memoriesstoragexplorer.ui.composables.AutoGrowTabController
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.SelectedPathView
+import com.mathias8dev.memoriesstoragexplorer.ui.composables.autoGrow.AutoGrowTabController
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.mediaGroup.MediaGroup
 import com.mathias8dev.memoriesstoragexplorer.ui.utils.asContentSchemeUri
 import com.mathias8dev.memoriesstoragexplorer.ui.utils.asSelectedPathView
@@ -250,7 +250,7 @@ class SharedViewModel(
             Timber.d("updateStorageOverview")
             Timber.d("selectedDiskOverview == null: ${selectedVolumeOverview == null}")
             Timber.d("!currentPathIsStorageVolumePath(currentRootPath): ${!currentPathIsStorageVolumePathUseCase(currentRootPath)}")
-            MediaGroup.fromPath(currentRootPath)?.takeIf { !it.isStorageVolumeGroup() }?.let { mediaGroup ->
+            MediaGroup.fromPath(currentRootPath)?.takeIf { !currentPathIsStorageVolumePathUseCase.invoke(it.path) }?.let { mediaGroup ->
                 Timber.d("updateStorageOverview: $mediaGroup")
                 selectedVolumeOverview = null
             }.otherwise {

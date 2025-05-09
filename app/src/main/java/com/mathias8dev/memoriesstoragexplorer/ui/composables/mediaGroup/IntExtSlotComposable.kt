@@ -20,7 +20,7 @@ import com.mathias8dev.memoriesstoragexplorer.domain.useCases.info.InternalStora
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.onLoading
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.onSuccess
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.ShimmerAnimation
-import com.mathias8dev.memoriesstoragexplorer.ui.composables.mediaInfo.produceResourceState
+import com.mathias8dev.memoriesstoragexplorer.ui.composables.produceResourceState
 import com.mathias8dev.memoriesstoragexplorer.ui.utils.asFileReadableSize
 import org.koin.compose.koinInject
 

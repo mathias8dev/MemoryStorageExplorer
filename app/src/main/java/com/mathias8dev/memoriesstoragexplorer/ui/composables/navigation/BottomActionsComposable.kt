@@ -1,4 +1,4 @@
-package com.mathias8dev.memoriesstoragexplorer.ui.composables
+package com.mathias8dev.memoriesstoragexplorer.ui.composables.navigation
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
@@ -33,12 +33,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.mathias8dev.memoriesstoragexplorer.R
 import com.mathias8dev.memoriesstoragexplorer.domain.FilterQuery
 import com.mathias8dev.memoriesstoragexplorer.domain.enums.AddMode
 import com.mathias8dev.memoriesstoragexplorer.domain.enums.LayoutMode
 import com.mathias8dev.memoriesstoragexplorer.domain.enums.SortMode
+import com.mathias8dev.memoriesstoragexplorer.ui.composables.contextMenu.ContextMenuComposable
+import com.mathias8dev.memoriesstoragexplorer.ui.composables.dialogBackgroundColor
 
 
 enum class BottomAction(
@@ -331,7 +334,7 @@ fun BottomActionsComposable(
 }
 
 @Composable
-fun BottomActionComposable(
+private fun BottomActionComposable(
     modifier: Modifier = Modifier,
     action: BottomAction,
     onClick: () -> Unit
@@ -348,7 +351,7 @@ fun BottomActionComposable(
 }
 
 @Composable
-fun BottomActionComposable(
+private fun BottomActionComposable(
     modifier: Modifier = Modifier,
     @DrawableRes iconRes: Int,
     @StringRes titleRes: Int? = null,
@@ -364,5 +367,21 @@ fun BottomActionComposable(
             tint = MaterialTheme.colorScheme.onBackground,
             contentDescription = titleRes?.let { stringResource(titleRes) }
         )
+    }
+}
+
+
+@Preview
+@Composable
+private fun BottomActionComposablePreview(modifier: Modifier = Modifier) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        BottomAction.entries.forEach {
+            BottomActionComposable(
+                action = it,
+                onClick = {}
+            )
+        }
     }
 }

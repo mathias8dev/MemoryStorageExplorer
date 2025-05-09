@@ -58,17 +58,12 @@ fun SettingsScreen(
     val viewModel: SettingsScreenViewModel = koinViewModel()
 
     val appSettings = LocalAppSettings.current
-    val showConfirmDeleteAccountDialog = rememberSaveable {
-        mutableStateOf(false)
-    }
+
 
     var showContactDialog by rememberSaveable {
         mutableStateOf(false)
     }
 
-    val showConfirmDisconnectDialog = rememberSaveable {
-        mutableStateOf(false)
-    }
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 

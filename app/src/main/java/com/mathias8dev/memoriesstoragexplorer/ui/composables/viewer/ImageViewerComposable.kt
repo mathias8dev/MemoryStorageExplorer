@@ -1,4 +1,4 @@
-package com.mathias8dev.memoriesstoragexplorer.ui.composables
+package com.mathias8dev.memoriesstoragexplorer.ui.composables.viewer
 
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -16,6 +16,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.IntSize
+import com.mathias8dev.memoriesstoragexplorer.ui.composables.ImageLoaderComposable
 import kotlinx.coroutines.launch
 
 
