@@ -8,11 +8,12 @@ import com.mathias8dev.memoriesstoragexplorer.domain.utils.Resource
 
 @Composable
 fun <T> produceResourceState(
+    key1: Any? = null,
     initialState: Resource<T> = Resource.Idle(),
     executeImmediately: Boolean = true,
     producer: suspend () -> T,
 ): State<Resource<T>> {
-    return produceState(initialValue = initialState) {
+    return produceState(initialValue = initialState, key1 = key1) {
         if (!executeImmediately && initialState is Resource.Idle<T>) {
             return@produceState
         }

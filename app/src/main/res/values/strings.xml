@@ -122,4 +122,9 @@
         <item quantity="one">File pasted successfully</item>
         <item quantity="other">Files pasted successfully</item>
     </plurals>
+
+    <!-- Storage volume events -->
+    <string name="storage_mounted">%s mounted</string>
+    <string name="storage_removed">%s removed</string>
+    <string name="storage_removed_navigating_back">Storage removed, navigating back to internal storage</string>
 </resources>

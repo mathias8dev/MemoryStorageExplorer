@@ -18,6 +18,7 @@ import androidx.lifecycle.viewModelScope
 import com.mathias8dev.memoriesstoragexplorer.R
 import com.mathias8dev.memoriesstoragexplorer.data.repositories.AppSettingsRepository
 import com.mathias8dev.memoriesstoragexplorer.domain.FilterQuery
+import com.mathias8dev.memoriesstoragexplorer.domain.cache.MediaCacheManager
 import com.mathias8dev.memoriesstoragexplorer.domain.enums.AddMode
 import com.mathias8dev.memoriesstoragexplorer.domain.enums.LayoutMode
 import com.mathias8dev.memoriesstoragexplorer.domain.enums.SortMode
@@ -28,6 +29,8 @@ import com.mathias8dev.memoriesstoragexplorer.domain.useCases.LoadStringResource
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.CurrentPathIsStorageVolumePathUseCase
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.GetFileNameUseCase
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.GetStorageVolumeOverviewUseCase
+import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.StorageVolumeEvent
+import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.StorageVolumeMonitorUseCase
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.StorageVolumeOverview
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.fileOperations.FileCreateDirectoryUseCase
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.fileOperations.FileCreateUseCase
@@ -57,12 +60,14 @@ import com.mathias8dev.memoriesstoragexplorer.ui.utils.asSelectedPathView
 import com.mathias8dev.memoriesstoragexplorer.ui.utils.isPdfDocument
 import com.mathias8dev.memoriesstoragexplorer.ui.utils.mimeData
 import de.datlag.mimemagic.MimeData
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.android.annotation.KoinViewModel
 import timber.log.Timber
 import java.io.File
@@ -90,6 +95,8 @@ class SharedViewModel(
     private val loadStringResourceUseCase: LoadStringResourceUseCase,
     private val createFileUseCase: FileCreateUseCase,
     private val createDirectoryUseCase: FileCreateDirectoryUseCase,
+    private val storageVolumeMonitorUseCase: StorageVolumeMonitorUseCase,
+    private val cacheManager: MediaCacheManager,
     private val appSettingsRepository: AppSettingsRepository,
 ) : ViewModel(), AppSettingsService by appSettingsRepository {
 
@@ -123,6 +130,8 @@ class SharedViewModel(
     private val _effect = MutableSharedFlow<Effect>()
     val effect = _effect.asSharedFlow()
 
+    private val _storageVolumesChanged = MutableSharedFlow<Unit>(replay = 1)
+    val storageVolumesChanged = _storageVolumesChanged.asSharedFlow()
 
     var selectedVolumeOverview by mutableStateOf<StorageVolumeOverview?>(null)
         private set
@@ -147,8 +156,19 @@ class SharedViewModel(
                 }
             }
 
+            // Listen for storage volume mount/unmount events
+            launch {
+                storageVolumeMonitorUseCase.events.collect { event ->
+                    Timber.d("Storage event received: $event")
+                    handleStorageVolumeEvent(event)
+                }
+            }
+
             delay(1.seconds)
             initialized = true // We don't want the initialization of the pagerState trigger the collect. Since it can false the backstack
+
+            // Emit initial storage volumes state
+            _storageVolumesChanged.emit(Unit)
         }
 
     }
@@ -285,6 +305,80 @@ class SharedViewModel(
         }
     }
 
+    private fun handleStorageVolumeEvent(event: StorageVolumeEvent) {
+        viewModelScope.launch {
+            when (event) {
+                is StorageVolumeEvent.Mounted -> {
+                    Timber.i("Storage mounted at: ${event.path}")
+                    // Show notification to user
+                    event.path?.let { path ->
+                        val volumeName = kotlin.runCatching {
+                            getFileNameUseCase(path)
+                        }.getOrElse { "External storage" }
+                        emitSnackbarEffect(
+                            loadStringResourceUseCase.invoke(R.string.storage_mounted, 1, volumeName)
+                        )
+                    }
+                    // Refresh storage overview if we're currently viewing storage volumes
+                    if (currentPathIsStorageVolumePathUseCase(currentRootPath)) {
+                        updateStorageOverview()
+                    }
+                    // Notify UI that storage volumes list has changed
+                    _storageVolumesChanged.emit(Unit)
+                }
+
+                is StorageVolumeEvent.Unmounted,
+                is StorageVolumeEvent.Ejected,
+                is StorageVolumeEvent.Removed -> {
+                    val action = when (event) {
+                        is StorageVolumeEvent.Unmounted -> "unmounted"
+                        is StorageVolumeEvent.Ejected -> "ejected"
+                        is StorageVolumeEvent.Removed -> "removed"
+                        else -> "disconnected"
+                    }
+                    val path = when (event) {
+                        is StorageVolumeEvent.Unmounted -> event.path
+                        is StorageVolumeEvent.Ejected -> event.path
+                        is StorageVolumeEvent.Removed -> event.path
+                        else -> null
+                    }
+                    Timber.i("Storage $action at: $path")
+
+                    // Check if the current path is affected by this unmount
+                    val isCurrentPathAffected = path != null && currentRootPath.startsWith(path, ignoreCase = true)
+
+                    if (isCurrentPathAffected) {
+                        // Navigate back to default storage if the current path is on the unmounted storage
+                        Timber.w("Current path is on unmounted storage, navigating to default storage")
+                        emitSnackbarEffect(
+                            loadStringResourceUseCase.invoke(R.string.storage_removed_navigating_back)
+                        )
+                        onBackStackEntryChanged(
+                            entry = BackStackEntry(path = defaultStorageRootPath)
+                        )
+                    } else {
+                        // Just show a notification
+                        path?.let { p ->
+                            val volumeName = kotlin.runCatching {
+                                getFileNameUseCase(p)
+                            }.getOrElse { "External storage" }
+                            emitSnackbarEffect(
+                                loadStringResourceUseCase.invoke(R.string.storage_removed, volumeName)
+                            )
+                        }
+                    }
+
+                    // Refresh storage overview
+                    if (currentPathIsStorageVolumePathUseCase(currentRootPath)) {
+                        updateStorageOverview()
+                    }
+                    // Notify UI that storage volumes list has changed
+                    _storageVolumesChanged.emit(Unit)
+                }
+            }
+        }
+    }
+
     suspend fun listRootFiles(): List<String> = suspendCoroutine { continuation ->
 
         val fileList = mutableListOf<String>()
@@ -331,10 +425,8 @@ class SharedViewModel(
                     suspend { emptyList() }
                 }
 
-                path.startsWith(defaultStorageRootPath) -> suspend { queryMediaListFromPathUseCase.invoke(path) }
-
-
-                else -> null
+                // Default case: treat as a file system path (supports all storage volumes including external USB drives)
+                else -> suspend { queryMediaListFromPathUseCase.invoke(path) }
             }
 
             queryFunc?.let { func ->
@@ -378,11 +470,13 @@ class SharedViewModel(
             if (derivedFile.isFile) {
                 when {
                     mimeData?.isImage == true -> {
-                        launchViewerIntent(
-                            context,
-                            derivedFile,
-                            mimeData.mimeType,
-                            ImageViewerActivity::class.java
+                        // Launch image viewer with only the current image
+                        // The viewer will lazy-load adjacent images as needed
+                        launchImageViewerIntent(
+                            context = context,
+                            file = derivedFile,
+                            mimeType = mimeData.mimeType,
+                            folderPath = currentRootPath
                         )
                     }
 
@@ -432,6 +526,27 @@ class SharedViewModel(
         }
     }
 
+    private fun launchImageViewerIntent(
+        context: Context,
+        file: File,
+        mimeType: String?,
+        folderPath: String
+    ) {
+        viewModelScope.launch {
+            val type = mimeType.otherwise(kotlin.runCatching { MimeData.fromFile(file) }.getOrNull()?.mimeType)
+            val intent = Intent()
+            intent.setClass(context, ImageViewerActivity::class.java)
+            val uri = file.asContentSchemeUri(context)
+            intent.setDataAndType(uri, type)
+
+            // Pass folder path and file path for lazy loading of adjacent images
+            intent.putExtra("folder_path", folderPath)
+            intent.putExtra("file_path", file.absolutePath)
+
+            context.startActivity(intent)
+        }
+    }
+
     private fun <T> launchViewerIntent(
         context: Context,
         file: File,
@@ -451,7 +566,11 @@ class SharedViewModel(
     fun onReload(wipeCache: Boolean = true, force: Boolean = true) {
         Timber.d("onReload")
         viewModelScope.launch {
-            if (wipeCache) cachedRootMediaInfo = null
+            if (wipeCache) {
+                cachedRootMediaInfo = null
+                // Invalidate cache for current path
+                cacheManager.invalidate(currentRootPath)
+            }
             updateStates()
             loadContentByLastBackStackEntry(force)
         }
@@ -539,6 +658,8 @@ class SharedViewModel(
                         createDirectoryUseCase(file.absolutePath)
                     }
                 }
+                // Invalidate cache for current path since we added folders
+                cacheManager.invalidate(currentRootPath)
                 onReload(true)
                 _effect.emit(Effect.HideAddMediaDialog)
                 emitSnackbarEffect(
@@ -559,6 +680,8 @@ class SharedViewModel(
                         createFileUseCase(currentRootPath, fileName, extension)
                     }
                 }
+                // Invalidate cache for current path since we added files
+                cacheManager.invalidate(currentRootPath)
                 onReload(true)
                 _effect.emit(Effect.HideAddMediaDialog)
                 emitSnackbarEffect(
@@ -593,6 +716,41 @@ class SharedViewModel(
                 )
             )
         }
+    }
+
+    /**
+     * Starts monitoring storage volume mount/unmount events
+     */
+    fun startStorageMonitoring() {
+        storageVolumeMonitorUseCase.startMonitoring()
+    }
+
+    /**
+     * Stops monitoring storage volume mount/unmount events
+     */
+    fun stopStorageMonitoring() {
+        storageVolumeMonitorUseCase.stopMonitoring()
+    }
+
+    /**
+     * Clear all cache (can be called from settings or manually)
+     */
+    fun clearAllCache() {
+        viewModelScope.launch {
+            cacheManager.clearAll()
+            cachedRootMediaInfo = null
+            Timber.i("All cache cleared")
+        }
+    }
+
+    /**
+     * Get cache statistics for debugging/monitoring
+     */
+    suspend fun getCacheStats() = cacheManager.getStats()
+
+    override fun onCleared() {
+        super.onCleared()
+        stopStorageMonitoring()
     }
 
     sealed class Effect {

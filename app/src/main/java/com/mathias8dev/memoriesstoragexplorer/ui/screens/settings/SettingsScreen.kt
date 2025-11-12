@@ -4,6 +4,7 @@ import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,10 +14,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -36,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mathias8dev.memoriesstoragexplorer.BuildConfig
 import com.mathias8dev.memoriesstoragexplorer.R
 import com.mathias8dev.memoriesstoragexplorer.domain.models.AppSettings
@@ -58,6 +62,7 @@ fun SettingsScreen(
     val viewModel: SettingsScreenViewModel = koinViewModel()
 
     val appSettings = LocalAppSettings.current
+    val cacheStats by viewModel.cacheStats.collectAsStateWithLifecycle()
 
 
     var showContactDialog by rememberSaveable {
@@ -129,6 +134,80 @@ fun SettingsScreen(
                     )
 
 
+                }
+
+                // Cache & Performance Section
+                SettingsItemSection(
+                    modifier = Modifier
+                        .padding(horizontal = 16.dp)
+                        .animateContentSize(),
+                    sectionTitle = "Performance & Cache"
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        // Cache statistics
+                        cacheStats?.let { stats ->
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = "Cache Status",
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = "Entries: ${stats.size} / ${stats.maxSize}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "Hit rate: ${String.format("%.1f", stats.hitRate * 100)}%",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "Hits: ${stats.hitCount} | Misses: ${stats.missCount}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+
+                        // Clear cache button
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    viewModel.clearAllCache()
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Clear Cache")
+                            }
+
+                            OutlinedButton(
+                                onClick = {
+                                    viewModel.loadCacheStats()
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Refresh Stats")
+                            }
+                        }
+
+                        Text(
+                            text = "Cache speeds up loading by storing recently viewed folders. Clear it if you notice stale data.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
 
                 /*SettingsItemSection(

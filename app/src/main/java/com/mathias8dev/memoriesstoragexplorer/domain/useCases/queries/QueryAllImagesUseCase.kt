@@ -7,6 +7,7 @@ import android.os.Build
 import android.provider.MediaStore
 import androidx.core.database.getStringOrNull
 import androidx.core.net.toUri
+import com.mathias8dev.memoriesstoragexplorer.domain.cache.MediaCacheManager
 import com.mathias8dev.memoriesstoragexplorer.domain.models.MediaInfo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -15,9 +16,24 @@ import java.io.File
 
 
 @Factory
-class QueryAllImagesUseCase(private val context: Context) {
+class QueryAllImagesUseCase(
+    private val context: Context,
+    private val cacheManager: MediaCacheManager
+) {
 
-    suspend fun invoke(): List<MediaInfo> = withContext(Dispatchers.IO) {
+    suspend fun invoke(useCache: Boolean = true): List<MediaInfo> = withContext(Dispatchers.IO) {
+        // Use cache if enabled
+        if (useCache) {
+            return@withContext cacheManager.getOrPut(MediaCacheManager.QueryType.ALL_IMAGES) {
+                queryAllImages()
+            }
+        }
+
+        // Direct query without cache
+        queryAllImages()
+    }
+
+    private suspend fun queryAllImages(): List<MediaInfo> {
         val audioList = mutableListOf<MediaInfo>()
 
         val collection =
@@ -89,6 +105,6 @@ class QueryAllImagesUseCase(private val context: Context) {
             }
         }
 
-        audioList
+        return audioList
     }
 }

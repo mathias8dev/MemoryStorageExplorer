@@ -132,27 +132,111 @@ class MainActivity : ComponentActivity() {
 
     private fun handleIncomingIntent(intent: Intent) {
         lifecycleScope.launch {
-            if (intent.extras?.getBoolean("INTERNAL_COPY_ACTION") == true) {
-                Timber.d("On new intent with internal copy action")
-                val uris = mutableListOf<Uri>()
-                intent.data?.let { uri ->
-                    uris.add(uri)
-                }
+            val action = intent.action
+            val isCopyAction = intent.extras?.getBoolean("INTERNAL_COPY_ACTION") == true
 
-                intent.clipData?.let { clipData ->
-                    for (i in 0 until clipData.itemCount) {
-                        val uri = clipData.getItemAt(i).uri
-                        uris.add(uri)
+            Timber.d("handleIncomingIntent: action=$action, isCopyAction=$isCopyAction")
+
+            // Handle different intent actions
+            when {
+                // Handle SEND, SEND_MULTIPLE, or marked INTERNAL_COPY_ACTION
+                isCopyAction || action == Intent.ACTION_SEND || action == Intent.ACTION_SEND_MULTIPLE -> {
+                    Timber.d("Processing intent for copy action")
+                    val uris = collectUrisFromIntent(intent)
+
+                    if (uris.isNotEmpty()) {
+                        Timber.d("Copying ${uris.size} URI(s) to clipboard: $uris")
+                        clipboardHandler.copyToClipboard(uris)
+
+                        // Show toast notification to user
+                        val message = when {
+                            uris.size == 1 -> "1 file ready to paste"
+                            else -> "${uris.size} files ready to paste"
+                        }
+                        android.widget.Toast.makeText(
+                            this@MainActivity,
+                            message,
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                        Timber.i("Successfully copied ${uris.size} file(s) to clipboard")
+                    } else {
+                        Timber.w("No URIs found in intent to copy")
+                        android.widget.Toast.makeText(
+                            this@MainActivity,
+                            "No files found to copy",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
-                intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)?.let { streamUris ->
-                    uris.addAll(streamUris)
+                // Handle VIEW or EDIT actions - these might be handled by specific viewers
+                action == Intent.ACTION_VIEW || action == Intent.ACTION_EDIT -> {
+                    Timber.d("View/Edit action received, data=${intent.data}")
+                    // These are typically handled by the specific activity (ImageViewerActivity, etc.)
+                    // No need to process here unless we want to show them in file manager
                 }
-
-                clipboardHandler.copyToClipboard(uris)
-
+                else -> {
+                    Timber.d("Unhandled intent action: $action")
+                }
             }
         }
+    }
+
+    /**
+     * Collect all URIs from an intent, handling various sources
+     */
+    private fun collectUrisFromIntent(intent: Intent): List<Uri> {
+        val uris = mutableListOf<Uri>()
+
+        // 1. Check for single URI in data field (used by SEND with single item)
+        intent.data?.let { uri ->
+            Timber.d("Found URI in intent.data: $uri")
+            uris.add(uri)
+        }
+
+        // 2. Check for single URI in EXTRA_STREAM (alternative for SEND)
+        @Suppress("DEPRECATION")
+        val extraStreamUri = if (SDK_INT >= 33) {
+            intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+        } else {
+            intent.getParcelableExtra<Uri>(Intent.EXTRA_STREAM)
+        }
+        extraStreamUri?.let { uri ->
+            Timber.d("Found URI in EXTRA_STREAM: $uri")
+            if (!uris.contains(uri)) {
+                uris.add(uri)
+            }
+        }
+
+        // 3. Check for multiple URIs in EXTRA_STREAM (used by SEND_MULTIPLE)
+        @Suppress("DEPRECATION")
+        val extraStreamUris = if (SDK_INT >= 33) {
+            intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java)
+        } else {
+            intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)
+        }
+        extraStreamUris?.let { streamUris ->
+            Timber.d("Found ${streamUris.size} URI(s) in EXTRA_STREAM array list")
+            streamUris.forEach { uri ->
+                if (!uris.contains(uri)) {
+                    uris.add(uri)
+                }
+            }
+        }
+
+        // 4. Check clipData (used for multiple items, even in some SEND cases)
+        intent.clipData?.let { clipData ->
+            Timber.d("Found clipData with ${clipData.itemCount} item(s)")
+            for (i in 0 until clipData.itemCount) {
+                val uri = clipData.getItemAt(i).uri
+                if (uri != null && !uris.contains(uri)) {
+                    Timber.d("Adding URI from clipData[$i]: $uri")
+                    uris.add(uri)
+                }
+            }
+        }
+
+        Timber.d("Total URIs collected: ${uris.size}")
+        return uris
     }
 
     @OptIn(ExperimentalMaterialNavigationApi::class, ExperimentalAnimationApi::class)

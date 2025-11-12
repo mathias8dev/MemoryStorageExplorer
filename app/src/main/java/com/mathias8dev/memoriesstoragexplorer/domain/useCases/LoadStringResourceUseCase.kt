@@ -11,5 +11,6 @@ class LoadStringResourceUseCase(
     private val context: Context
 ) {
     operator fun invoke(@StringRes resId: Int): String = context.getString(resId)
+    operator fun invoke(@StringRes resId: Int, vararg formatArgs: Any): String = context.getString(resId, formatArgs)
     operator fun invoke(@PluralsRes resId: Int, count: Int): String = context.resources.getQuantityString(resId, count)
 }

@@ -7,6 +7,7 @@ import android.os.Build
 import android.provider.MediaStore
 import androidx.core.database.getStringOrNull
 import androidx.core.net.toUri
+import com.mathias8dev.memoriesstoragexplorer.domain.cache.MediaCacheManager
 import com.mathias8dev.memoriesstoragexplorer.domain.models.MediaInfo
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.info.GetSizeFromPathUseCase
 import kotlinx.coroutines.Dispatchers
@@ -18,10 +19,23 @@ import java.io.File
 @Factory
 class QueryMediaListFromPathUseCase(
     private val context: Context,
-    private val getSizeFromPathUseCase: GetSizeFromPathUseCase
+    private val getSizeFromPathUseCase: GetSizeFromPathUseCase,
+    private val cacheManager: MediaCacheManager
 ) {
 
-    suspend fun invoke(path: String): List<MediaInfo> = withContext(Dispatchers.IO) {
+    suspend fun invoke(path: String, useCache: Boolean = true): List<MediaInfo> = withContext(Dispatchers.IO) {
+        // Use cache if enabled
+        if (useCache) {
+            return@withContext cacheManager.getOrPut(path) {
+                queryMediaList(path)
+            }
+        }
+
+        // Direct query without cache
+        queryMediaList(path)
+    }
+
+    private suspend fun queryMediaList(path: String): List<MediaInfo> {
         val rootFile = File(path)
         val mediaList = mutableListOf<MediaInfo>()
 
@@ -93,7 +107,6 @@ class QueryMediaListFromPathUseCase(
             }
         }
 
-        mediaList
-
+        return mediaList
     }
 }

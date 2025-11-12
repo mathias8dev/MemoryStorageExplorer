@@ -8,7 +8,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -21,7 +25,9 @@ import com.mathias8dev.memoriesstoragexplorer.domain.utils.onLoading
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.onSuccess
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.ShimmerAnimation
 import com.mathias8dev.memoriesstoragexplorer.ui.composables.produceResourceState
+import com.mathias8dev.memoriesstoragexplorer.ui.screens.home.SharedViewModel
 import com.mathias8dev.memoriesstoragexplorer.ui.utils.asFileReadableSize
+import org.koin.androidx.compose.koinViewModel
 import org.koin.compose.koinInject
 
 
@@ -32,8 +38,19 @@ fun IntExtSlotComposable(
 ) {
     val useCase = koinInject<InternalStorageFilesInfoUseCase>()
     val storageVolumesUseCase = koinInject<GetStorageVolumesUseCase>()
+    val viewModel: SharedViewModel = koinViewModel()
 
-    val storageVolumesOverviewResource by produceResourceState {
+    // Trigger to force recomposition when storage volumes change
+    var refreshTrigger by remember { mutableIntStateOf(0) }
+
+    // Listen for storage volume changes
+    LaunchedEffect(Unit) {
+        viewModel.storageVolumesChanged.collect {
+            refreshTrigger++
+        }
+    }
+
+    val storageVolumesOverviewResource by produceResourceState(key1 = refreshTrigger) {
         storageVolumesUseCase.invoke()
     }
 

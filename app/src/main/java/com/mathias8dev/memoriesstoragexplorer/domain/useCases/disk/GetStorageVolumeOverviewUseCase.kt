@@ -47,6 +47,11 @@ class GetStorageVolumeOverviewUseCase(
     private suspend fun deriveStorageOverview(context: Context, path: String, lastSeenPath: String? = null): StorageVolumeOverview {
         val file = File(path)
 
+        // Ensure the file exists and is accessible before creating StatFs
+        if (!file.exists()) {
+            throw IllegalArgumentException("Path does not exist: $path")
+        }
+
         // Get the storage stats
         val statFs = StatFs(file.absolutePath)
 

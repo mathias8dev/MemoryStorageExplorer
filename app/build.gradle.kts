@@ -1,6 +1,8 @@
+import java.io.FileInputStream
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
@@ -34,7 +36,7 @@ fun localDatetime(): String = run {
 
 android {
     namespace = "com.mathias8dev.memoriesstoragexplorer"
-    compileSdk = 35
+    compileSdk = 36
 
     val versionMajor: String by project
     val versionMinor: String by project
@@ -43,7 +45,7 @@ android {
     defaultConfig {
         applicationId = "com.mathias8dev.memoriesstorageexplorer"
         minSdk = 24
-        targetSdk = 35
+        targetSdk = 36
         versionCode = computeVersionCode(versionMajor, versionMinor, versionPatch)
         versionName = computeVersionName(versionMajor, versionMinor, versionPatch)
 
@@ -53,27 +55,48 @@ android {
         }
     }
 
+
+
+    signingConfigs {
+        maybeCreate("debug")
+        maybeCreate("release")
+
+        val props = Properties().apply {
+            load(FileInputStream(file("../keystore/release.properties")))
+        }
+
+        val storeFile = file(props["storeFile"] as String)
+        val storePassword = props["storePassword"] as String
+        val keyAlias = props["keyAlias"] as String
+        val keyPassword = props["keyPassword"] as String
+
+        all {
+            this.storeFile = storeFile
+            this.keyAlias = keyAlias
+            this.storePassword = storePassword
+            this.keyPassword = keyPassword
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        isCoreLibraryDesugaringEnabled = true
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
-    kotlinOptions {
-        jvmTarget = "17"
+
+    kotlin {
+        jvmToolchain(21)
     }
     buildFeatures {
         compose = true
         buildConfig = true
-    }
-    compileOptions {
-        isCoreLibraryDesugaringEnabled = true
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"

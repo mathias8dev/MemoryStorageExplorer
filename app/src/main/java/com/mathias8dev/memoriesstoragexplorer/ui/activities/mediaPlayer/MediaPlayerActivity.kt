@@ -18,6 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import com.mathias8dev.memoriesstoragexplorer.SettingsProviderViewModel
 import com.mathias8dev.memoriesstoragexplorer.domain.models.AppSettings
+import com.mathias8dev.memoriesstoragexplorer.ui.activities.mediaPlayer.components.EnhancedMediaPlayer
 import com.mathias8dev.memoriesstoragexplorer.ui.activities.mediaPlayer.components.MediaPlayer
 import com.mathias8dev.memoriesstoragexplorer.ui.theme.MemoriesStorageExplorerTheme
 import org.koin.androidx.compose.koinViewModel
@@ -45,9 +46,10 @@ class MediaPlayerActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize()
                 ) {
                     if (uri != null && (type?.startsWith("video/") == true || type?.startsWith("audio/") == true)) {
-                        MediaPlayer(
+                        EnhancedMediaPlayer(
                             modifier = Modifier.fillMaxSize(),
-                            uri = uri
+                            uri = uri,
+                            onBack = { finish() }
                         )
                     } else {
                         Column(

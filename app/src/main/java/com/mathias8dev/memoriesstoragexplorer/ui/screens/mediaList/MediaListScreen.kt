@@ -307,6 +307,11 @@ fun MediaListScreen(
         }
     }
 
+    // Start monitoring storage volume mount/unmount events
+    LaunchedEffect(Unit) {
+        viewModel.startStorageMonitoring()
+    }
+
     var firstBack = rememberSaveable {
         -1L
     }

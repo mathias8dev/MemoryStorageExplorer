@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import com.mathias8dev.memoriesstoragexplorer.ui.theme.MemoriesStorageExplorerTheme
 import com.rajat.pdfviewer.PdfRendererView
 import com.rajat.pdfviewer.compose.PdfRendererViewCompose
+import com.rajat.pdfviewer.util.PdfSource
 import timber.log.Timber
 
 
@@ -67,7 +68,7 @@ class PdfViewerActivity : ComponentActivity() {
                             )
                         }
                     ) { padding ->
-                        if (type != null && type.startsWith("application/pdf")) {
+                        if (uri != null && type != null && type.startsWith("application/pdf")) {
                             MyPdfScreenFromUri(
                                 uri = uri,
                                 modifier = Modifier
@@ -93,13 +94,13 @@ class PdfViewerActivity : ComponentActivity() {
 
 @Composable
 fun MyPdfScreenFromUri(
-    uri: Uri?,
+    uri: Uri,
     modifier: Modifier = Modifier
 ) {
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     PdfRendererViewCompose(
         modifier = modifier,
-        uri = uri,
+        source = PdfSource.LocalUri(uri),
         lifecycleOwner = lifecycleOwner,
         statusCallBack = object : PdfRendererView.StatusCallBack {
             override fun onPdfLoadStart() {
@@ -134,7 +135,7 @@ fun MyPdfScreenFromUrl(url: String, modifier: Modifier = Modifier) {
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     PdfRendererViewCompose(
         modifier = modifier,
-        url = url,
+        source = PdfSource.Remote(url = url),
         lifecycleOwner = lifecycleOwner,
         statusCallBack = object : PdfRendererView.StatusCallBack {
             override fun onPdfLoadStart() {

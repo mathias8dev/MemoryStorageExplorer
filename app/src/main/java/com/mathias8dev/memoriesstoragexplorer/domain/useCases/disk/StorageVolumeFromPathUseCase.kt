@@ -24,7 +24,7 @@ class StorageVolumeFromPathUseCase(
         // Check if the given path matches any storage volume's root directory
         storageVolumes.find { volume ->
             val volumePath = volume.absolutePathOrNull()
-            volumePath != null && if (strictMatch) path == volumePath else volumePath.startsWith(path, true)
+            volumePath != null && if (strictMatch) path == volumePath else path.startsWith(volumePath, true)
         }
     }
 }
