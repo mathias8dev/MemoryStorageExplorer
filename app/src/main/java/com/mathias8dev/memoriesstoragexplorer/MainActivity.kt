@@ -99,7 +99,11 @@ class MainActivity : ComponentActivity() {
     private val fileOperationsServiceConnection by lazy {
         object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                val binder = service as FileOperationsClipboardExecutorAndroidServiceImpl.FileOperationsBinder
+                val binder = service as? FileOperationsClipboardExecutorAndroidServiceImpl.FileOperationsBinder
+                if (binder == null) {
+                    Timber.e("Service binder is not of expected type FileOperationsBinder")
+                    return
+                }
                 fileOperationsAndroidServiceProvider = binder.service
                 clipboardExecutorProvider = binder.service
                 clipboardHandler.setFileOperationsAndroidService(binder.service)
@@ -174,6 +178,7 @@ class MainActivity : ComponentActivity() {
                     // These are typically handled by the specific activity (ImageViewerActivity, etc.)
                     // No need to process here unless we want to show them in file manager
                 }
+
                 else -> {
                     Timber.d("Unhandled intent action: $action")
                 }

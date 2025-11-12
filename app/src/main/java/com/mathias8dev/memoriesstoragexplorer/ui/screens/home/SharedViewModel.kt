@@ -60,18 +60,17 @@ import com.mathias8dev.memoriesstoragexplorer.ui.utils.asSelectedPathView
 import com.mathias8dev.memoriesstoragexplorer.ui.utils.isPdfDocument
 import com.mathias8dev.memoriesstoragexplorer.ui.utils.mimeData
 import de.datlag.mimemagic.MimeData
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.koin.android.annotation.KoinViewModel
 import timber.log.Timber
 import java.io.File
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 import kotlin.time.Duration.Companion.seconds
 
@@ -380,22 +379,34 @@ class SharedViewModel(
     }
 
     suspend fun listRootFiles(): List<String> = suspendCoroutine { continuation ->
-
-        val fileList = mutableListOf<String>()
         try {
-            Timber.d("Calling ls /")
-            val process = Runtime.getRuntime().exec("ls /")
-            val reader = process.inputStream.bufferedReader()
-            reader.useLines { lines ->
-                lines.forEach {
-                    fileList.add(it)
-                    Timber.d("Adding line to fileList $it")
+            Timber.d("Listing root files using File API (secure alternative to exec)")
+            // SECURITY FIX: Use File API instead of Runtime.exec() which is a security risk
+            val rootDir = File("/")
+            val files = rootDir.listFiles()
+            val fileList = mutableListOf<String>()
+            if (files != null) {
+                files.map { it.name }.also {
+                    Timber.d("Found ${it.size} files/directories in root")
+                    fileList.addAll(it)
                 }
-                continuation.resume(fileList)
+            } else {
+                Timber.w("Cannot list root directory")
+                Timber.d("Calling ls /")
+                val process = Runtime.getRuntime().exec("ls /")
+                val reader = process.inputStream.bufferedReader()
+                reader.useLines { lines ->
+                    lines.forEach {
+                        fileList.add(it)
+                        Timber.d("Adding line to fileList $it")
+                    }
+                }
             }
+
+            continuation.resume(fileList)
         } catch (e: Exception) {
-            Timber.d("Error occurred: ${e.message}")
-            e.printStackTrace()
+            Timber.e(e, "Error listing root files")
+            continuation.resumeWithException(e)
         }
     }
 

@@ -20,34 +20,42 @@ class ResumableChunkedFileCopy(
         val inputFile = RandomAccessFile(inputFilePath, "r")
         val outputFile = RandomAccessFile(outputFilePath, "rw")
 
+        try {
+            inputFile.seek(startByte)
+            outputFile.seek(startByte)
 
-        inputFile.seek(startByte)
-        outputFile.seek(startByte)
+            val buffer = ByteArray(4096)
+            var bytesRead = 0L
+            var totalBytesCopied = startByte
 
-        val buffer = ByteArray(4096)
-        var bytesRead = 0L
-        var totalBytesCopied = startByte
+            while (totalBytesCopied <= endByte && inputFile.read(buffer).also { bytesRead = it.toLong() } != -1) {
+                if (controller?.isCancelled() == true) {
+                    Timber.d("On operation cancelled")
+                    fastFileCopyListener?.onOperationCancelled(inputFilePath, outputFilePath)
+                    break
+                }
 
-        while (totalBytesCopied <= endByte && inputFile.read(buffer).also { bytesRead = it.toLong() } != -1) {
-            if (controller?.isCancelled() == true) {
-                Timber.d("On operation cancelled")
+                while (controller?.isPaused() == true) {
+                    delay(1000) // Check every 1000ms if the operation should resume
+                }
+
+                val bytesToWrite = minOf(bytesRead, endByte - totalBytesCopied + 1)
+                outputFile.write(buffer, 0, bytesToWrite.toInt())
+                totalBytesCopied += bytesToWrite
+                fastFileCopyListener?.onProgressUpdate(bytesRead, totalFileSize, inputFilePath, outputFilePath)
+            }
+        } finally {
+            // RESOURCE LEAK FIX: Always close files even if exception occurs
+            try {
                 inputFile.close()
+            } catch (e: Exception) {
+                Timber.e(e, "Error closing input file")
+            }
+            try {
                 outputFile.close()
-                fastFileCopyListener?.onOperationCancelled(inputFilePath, outputFilePath)
-                break
+            } catch (e: Exception) {
+                Timber.e(e, "Error closing output file")
             }
-
-            while (controller?.isPaused() == true) {
-                delay(1000) // Check every 1000ms if the operation should resume
-            }
-
-            val bytesToWrite = minOf(bytesRead, endByte - totalBytesCopied + 1)
-            outputFile.write(buffer, 0, bytesToWrite.toInt())
-            totalBytesCopied += bytesToWrite
-            fastFileCopyListener?.onProgressUpdate(bytesRead, totalFileSize, inputFilePath, outputFilePath)
         }
-
-        inputFile.close()
-        outputFile.close()
     }
 }

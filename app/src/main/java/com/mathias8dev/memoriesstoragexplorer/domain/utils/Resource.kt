@@ -34,7 +34,7 @@ inline fun <T> Resource<T>.onIdle(callback: () -> Unit) {
 }
 
 inline fun <T> Resource<T>.onNotIdle(callback: () -> Unit) {
-    if (this is Resource.Idle<T>) {
+    if (this !is Resource.Idle<T>) {
         callback()
     }
 }

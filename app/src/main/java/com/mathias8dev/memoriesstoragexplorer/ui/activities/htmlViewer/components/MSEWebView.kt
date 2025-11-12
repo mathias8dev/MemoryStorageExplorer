@@ -205,8 +205,10 @@ fun MSEWebView(
 
 
     BackHandler(enabled = backEnabled) {
-        removeElement(webView!!)
-        webView?.goBack()
+        webView?.let { view ->
+            removeElement(view)
+            view.goBack()
+        }
     }
 
 
@@ -369,6 +371,18 @@ internal fun rememberAdServers(): StringBuilder {
             }
         } catch (e: IOException) {
             e.printStackTrace()
+        } finally {
+            // RESOURCE LEAK FIX: Always close streams to prevent memory leaks
+            try {
+                br.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+            try {
+                inputStream.close()
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
         }
 
         adServers
