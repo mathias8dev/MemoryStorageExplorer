@@ -1,12 +1,10 @@
 package com.mathias8dev.memoriesstoragexplorer.ui.activities.imageViewer
 
-import android.content.Context
 import android.net.Uri
 import androidx.core.net.toFile
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.queries.QueryMediaListFromPathUseCase
-import com.mathias8dev.memoriesstoragexplorer.ui.utils.asContentSchemeUri
 import com.mathias8dev.memoriesstoragexplorer.ui.utils.mimeData
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +21,6 @@ import timber.log.Timber
 @KoinViewModel
 class ImageViewerViewModel(
     private val queryMediaListFromPathUseCase: QueryMediaListFromPathUseCase,
-    private val context: Context
 ) : ViewModel() {
 
     private val _imageUris = MutableStateFlow<List<Uri>>(emptyList())
@@ -90,8 +87,8 @@ class ImageViewerViewModel(
                     // Filter only images and map to content URIs
                     val imagesWithPaths = mediaList.mapNotNull { mediaInfo ->
                         val file = mediaInfo.privateContentUri?.toFile()
-                        val contentUri = file?.asContentSchemeUri(context)
                         val isImage = file?.mimeData?.isImage == true
+                        val contentUri = mediaInfo.contentUri
 
                         Timber.v("=== LOAD === File: ${file?.absolutePath}, isImage: $isImage, contentUri: $contentUri")
 

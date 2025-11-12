@@ -1,7 +1,6 @@
 package com.mathias8dev.memoriesstoragexplorer.domain.cache
 
 import android.util.LruCache
-import androidx.annotation.VisibleForTesting
 import timber.log.Timber
 import kotlin.time.Duration.Companion.minutes
 
@@ -91,7 +90,6 @@ class LruMediaCache(
     /**
      * Get cache statistics for debugging
      */
-    @VisibleForTesting
     fun getStats(): CacheStats {
         return CacheStats(
             size = cache.size(),

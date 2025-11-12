@@ -14,75 +14,86 @@ class BackStackHolder {
 
     private val lastPoppedEntries = mutableScatterMapOf<Int, BackStackEntry>()
 
+    // Thread safety lock for concurrent access
+    private val lock = Any()
+
     fun setCurrentPosition(position: Int) {
         currentPosition.intValue = position
         Timber.d("setCurrentPosition: $position")
     }
 
     fun addAt(position: Int = currentPosition.intValue, entry: BackStackEntry) {
-        stack[position] = stack.getOrElse(position) { emptyList() } + entry
-        Timber.d("addAt: $position - $entry")
+        synchronized(lock) {
+            stack[position] = stack.getOrElse(position) { emptyList() } + entry
+            Timber.d("addAt: $position - $entry")
+        }
     }
 
     fun stackSizeAt(position: Int = currentPosition.intValue): Int {
-        return stack[position]?.size ?: 0
+        synchronized(lock) {
+            return stack[position]?.size ?: 0
+        }
     }
 
     fun isStackEmptyAt(position: Int = currentPosition.intValue): Boolean {
-        return stack[position].isNullOrEmpty()
-    }
-
-    fun addOrUpdateAt(position: Int = currentPosition.intValue, entry: BackStackEntry) {
-        addAt(position, entry)
+        synchronized(lock) {
+            return stack[position].isNullOrEmpty()
+        }
     }
 
     fun getAt(position: Int = currentPosition.intValue): BackStackEntry? {
-        val entry = stack.getOrElse(position) { emptyList() }.lastOrNull()
-        Timber.d("getAt: $position - $entry")
-        return entry
+        synchronized(lock) {
+            val entry = stack.getOrElse(position) { emptyList() }.lastOrNull()
+            Timber.d("getAt: $position - $entry")
+            return entry
+        }
     }
 
     fun removeAt(position: Int = currentPosition.intValue) {
-        val last = stack[position]?.lastOrNull()
-        stack[position] = stack.getOrElse(position) { emptyList() }.dropLast(1)
-        last?.let { lastPoppedEntries[position] = it }
+        // LOGIC FIX: Don't create empty stack entries where none existed
+        synchronized(lock) {
+            val currentStack = stack[position]
+            if (currentStack.isNullOrEmpty()) {
+                Timber.d("removeAt: Stack is empty at position $position, nothing to remove")
+                return
+            }
+
+            val last = currentStack.lastOrNull()
+            stack[position] = currentStack.dropLast(1)
+            last?.let { lastPoppedEntries[position] = it }
+            Timber.d("removeAt: $position - removed $last")
+        }
     }
 
     fun updateLastEntryAt(position: Int = currentPosition.intValue, entry: BackStackEntry) {
-        stack[position] = stack.getOrElse(position) { emptyList() }.dropLast(1) + entry
+        // LOGIC FIX: Validate that stack is not empty before updating
+        synchronized(lock) {
+            val currentStack = stack.getOrElse(position) { emptyList() }
+            if (currentStack.isEmpty()) {
+                Timber.w("updateLastEntryAt: Cannot update empty stack at position $position, adding instead")
+                addAt(position, entry)
+                return
+            }
+            stack[position] = currentStack.dropLast(1) + entry
+            Timber.d("updateLastEntryAt: $position - updated to $entry")
+        }
     }
-
-    fun getBeforeLastAt(position: Int = currentPosition.intValue): BackStackEntry? {
-        val stack = stack.getOrElse(position) { emptyList() }.toList()
-        val entry = stack.dropLast(1).lastOrNull()
-        Timber.d("getBeforeLastAt: $position - $entry")
-        return entry
-    }
-
-    fun removeAllAt(position: Int = currentPosition.intValue) {
-        stack[position] = emptyList()
-    }
-
 
     fun clear() {
-        stack.clear()
-    }
-
-    fun getOrAddAt(position: Int = currentPosition.intValue, backStackEntry: BackStackEntry): BackStackEntry {
-        val entry = if (isStackEmptyAt(position)) {
-            addAt(position, backStackEntry)
-            backStackEntry
-        } else {
-            getAt(position)!!
+        // MEMORY LEAK FIX: Clear both stack and lastPoppedEntries
+        synchronized(lock) {
+            stack.clear()
+            lastPoppedEntries.clear()
+            Timber.d("clear: Cleared all stacks and last popped entries")
         }
-        Timber.d("getOrAddAt: $position - $entry")
-        return entry
     }
 
     fun lastPoppedAt(position: Int = currentPosition.intValue): BackStackEntry? {
-        val entry = lastPoppedEntries[position]
-        Timber.d("lastPoppedAt: $position - $entry")
-        return entry
+        synchronized(lock) {
+            val entry = lastPoppedEntries[position]
+            Timber.d("lastPoppedAt: $position - $entry")
+            return entry
+        }
     }
 
 

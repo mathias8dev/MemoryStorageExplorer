@@ -4,6 +4,7 @@ import android.os.Environment
 import android.os.Parcelable
 import com.mathias8dev.memoriesstoragexplorer.domain.FilterQuery
 import com.mathias8dev.memoriesstoragexplorer.domain.enums.SortMode
+import com.mathias8dev.memoriesstoragexplorer.ui.composables.mediaGroup.MediaGroup
 import kotlinx.parcelize.Parcelize
 import java.util.UUID
 
@@ -18,7 +19,7 @@ data class BackStackEntry(
 
     companion object {
         val default = BackStackEntry(
-            path = Environment.getExternalStorageDirectory().absolutePath,
+            path = MediaGroup.Home.path,
             filterQueries = emptyList(),
             sortMode = SortMode.NAME_AZ
         )

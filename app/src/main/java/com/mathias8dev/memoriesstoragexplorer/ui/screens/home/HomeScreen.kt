@@ -2,7 +2,6 @@ package com.mathias8dev.memoriesstoragexplorer.ui.screens.home
 
 import android.Manifest
 import android.os.Build
-import android.os.Environment
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -90,10 +89,7 @@ fun HomeScreen(
             enter = fadeIn(),
             exit = fadeOut()
         ) {
-            MediaListScreen(
-                path = Environment.getExternalStorageDirectory().absolutePath,
-                navigator = navigator
-            )
+            MediaListScreen(navigator = navigator)
         }
     }
 

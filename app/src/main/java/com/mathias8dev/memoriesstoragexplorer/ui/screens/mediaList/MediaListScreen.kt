@@ -1,6 +1,5 @@
 package com.mathias8dev.memoriesstoragexplorer.ui.screens.mediaList
 
-import android.os.Environment
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -104,7 +103,7 @@ import kotlin.time.Duration.Companion.seconds
 @Destination
 @RootNavGraph
 fun MediaListScreen(
-    path: String = Environment.getExternalStorageDirectory().absolutePath,
+    path: String = MediaGroup.Home.path,
     navigator: DestinationsNavigator
 ) {
 
@@ -115,10 +114,6 @@ fun MediaListScreen(
 
     val selectedMedia = clipboardHandler.selectedMedia
     val clipboard = clipboardHandler.clipboard
-
-    var loaded by rememberSaveable {
-        mutableStateOf(false)
-    }
 
     val localContext = LocalContext.current
 
@@ -142,7 +137,6 @@ fun MediaListScreen(
     }
 
     val pagerState = viewModel.pagerState
-    val isCurrentStackEmpty by viewModel.isCurrentStackEmpty
     val currentStackSize by viewModel.currentStackSize
     val tabIndex = viewModel.tabIndex.collectAsStateWithLifecycle()
     val backStackEntry by viewModel.backStackEntry.collectAsStateWithLifecycle()
@@ -205,7 +199,7 @@ fun MediaListScreen(
     }
 
     val localSnackbarHostState = LocalSnackbarHostState.current
-    val localUriHandler = LocalUriHandler.current
+    LocalUriHandler.current
 
 
     LaunchedEffect(Unit) {
@@ -243,7 +237,7 @@ fun MediaListScreen(
     }
 
     LaunchedEffect(Unit) {
-        val scope = this
+        this
         Timber.d("Listening to file operations")
         clipboardHandler.onFileOperationEvent {
             Timber.d("FileOperationEvent: $it")
@@ -336,15 +330,12 @@ fun MediaListScreen(
         else clipboardHandler.onRemoveAllSelectedMedia()
     }
 
-    LaunchedEffect(Unit) {
-        if (!loaded) {
-            viewModel.onBackStackEntryChanged(
-                entry = BackStackEntry(
-                    path = path,
-                )
+    LaunchedEffect(path) {
+        viewModel.onBackStackEntryChanged(
+            entry = BackStackEntry(
+                path = path,
             )
-            loaded = true
-        }
+        )
     }
 
 

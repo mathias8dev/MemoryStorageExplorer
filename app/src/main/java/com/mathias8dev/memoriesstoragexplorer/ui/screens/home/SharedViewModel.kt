@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Environment
-import android.widget.Toast
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.runtime.getValue
@@ -177,7 +176,7 @@ class SharedViewModel(
         viewModelScope.launch {
             Timber.d("onBackStackEntryChanged: ${tabIndex.value} - $entry")
             backStackHolder.setCurrentPosition(position)
-            backStackHolder.addOrUpdateAt(entry = entry)
+            backStackHolder.addAt(entry = entry)
             Timber.d("backStackEntry: ${backStackEntry.value}")
             onReload(wipeCache = false, force = true)
         }
@@ -210,7 +209,7 @@ class SharedViewModel(
         viewModelScope.launch {
             Timber.d("onTabIndexChangedBasedOnSwipe")
             tabsController.updateTabIndexBasedOnSwipe(isSwipeToLeft)
-            val entry = backStackHolder.getAt(tabIndex.value) ?: BackStackEntry.default
+            val entry = backStackHolder.getAt(tabIndex.value) ?: BackStackEntry()
             onBackStackEntryChanged(entry = entry)
             Timber.d("backStackEntry: ${backStackEntry.value}")
         }
@@ -290,9 +289,13 @@ class SharedViewModel(
     }
 
     private fun updateBackStackState() {
+        if (backStackHolder.isStackEmptyAt()) {
+            onBackStackEntryChanged(entry = BackStackEntry.default)
+            return
+        }
         currentStackSize.intValue = backStackHolder.stackSizeAt()
         isCurrentStackEmpty.value = backStackHolder.isStackEmptyAt()
-        _backStackEntry.value = backStackHolder.getAt().otherwise(BackStackEntry.default)
+        _backStackEntry.value = backStackHolder.getAt()!!
     }
 
     private fun updateTabName() {
@@ -416,18 +419,18 @@ class SharedViewModel(
         sortMode: SortMode = SortMode.NAME_AZ
     ) {
         viewModelScope.launch {
-            val queryFunc: (suspend () -> List<MediaInfo>)? = when {
-                path == MediaGroup.Audio.path -> queryAllAudiosUseCase::invoke
-                path == MediaGroup.Video.path -> queryAllVideosUseCase::invoke
-                path == MediaGroup.Document.path -> queryAllDocumentsUseCase::invoke
-                path == MediaGroup.Image.path -> queryAllImagesUseCase::invoke
-                path == MediaGroup.Archive.path -> queryAllArchivesUseCase::invoke
-                path == MediaGroup.RecentFiles.path -> queryRecentFilesUseCase::invoke
-                path == MediaGroup.AllFiles.path -> queryAllMediaUseCase::invoke
-                path == MediaGroup.Apk.path -> queryAllApksUseCase::invoke
-                path == MediaGroup.RecycleBin.path -> queryAllFromRecycleBinUseCase::invoke
-                path == MediaGroup.App.path -> queryInstalledApps::invoke
-                path == MediaGroup.Root.path -> {
+            val queryFunc: (suspend () -> List<MediaInfo>)? = when (path) {
+                MediaGroup.Audio.path -> queryAllAudiosUseCase::invoke
+                MediaGroup.Video.path -> queryAllVideosUseCase::invoke
+                MediaGroup.Document.path -> queryAllDocumentsUseCase::invoke
+                MediaGroup.Image.path -> queryAllImagesUseCase::invoke
+                MediaGroup.Archive.path -> queryAllArchivesUseCase::invoke
+                MediaGroup.RecentFiles.path -> queryRecentFilesUseCase::invoke
+                MediaGroup.AllFiles.path -> queryAllMediaUseCase::invoke
+                MediaGroup.Apk.path -> queryAllApksUseCase::invoke
+                MediaGroup.RecycleBin.path -> queryAllFromRecycleBinUseCase::invoke
+                MediaGroup.App.path -> queryInstalledApps::invoke
+                MediaGroup.Root.path -> {
                     Timber.d("Listing root files")
                     kotlin.runCatching {
                         val files = listRootFiles()
@@ -589,7 +592,7 @@ class SharedViewModel(
 
     fun onFilter(queries: List<FilterQuery>) {
         viewModelScope.launch {
-            val entry = (backStackEntry.value ?: BackStackEntry.default).copy(filterQueries = queries)
+            val entry = backStackEntry.value!!.copy(filterQueries = queries)
             backStackHolder.updateLastEntryAt(entry = entry)
             onReload(wipeCache = false, force = false)
         }
@@ -603,7 +606,7 @@ class SharedViewModel(
 
     fun onSort(sortMode: SortMode) {
         viewModelScope.launch {
-            val entry = (backStackEntry.value ?: BackStackEntry.default).copy(sortMode = sortMode)
+            val entry = backStackEntry.value!!.copy(sortMode = sortMode)
             backStackHolder.updateLastEntryAt(entry = entry)
             onReload(wipeCache = false, force = false)
         }
@@ -704,16 +707,6 @@ class SharedViewModel(
         }
     }
 
-    private fun emitToastEffect(message: String, duration: Int = Toast.LENGTH_SHORT) {
-        viewModelScope.launch {
-            _effect.emit(
-                Effect.ShowToast(
-                    message = message,
-                    duration = duration
-                )
-            )
-        }
-    }
 
     private fun emitSnackbarEffect(
         message: String,
@@ -754,14 +747,11 @@ class SharedViewModel(
         }
     }
 
-    /**
-     * Get cache statistics for debugging/monitoring
-     */
-    suspend fun getCacheStats() = cacheManager.getStats()
 
     override fun onCleared() {
         super.onCleared()
         stopStorageMonitoring()
+        clearAllCache()
     }
 
     sealed class Effect {
