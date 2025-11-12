@@ -10,6 +10,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import com.materialkolor.dynamicColorScheme
+import com.materialkolor.dynamiccolor.ColorSpec
 import com.mathias8dev.memoriesstoragexplorer.domain.enums.ThemeMode
 import com.mathias8dev.memoriesstoragexplorer.domain.models.AppSettings
 
@@ -59,7 +60,7 @@ fun MemoriesStorageExplorerTheme(
         }
 
         appSettings != null -> {
-            dynamicColorScheme(appSettings.seedColor, isDarkMode)
+            dynamicColorScheme(appSettings.seedColor, isDarkMode, specVersion = ColorSpec.SpecVersion.SPEC_2025)
         }
         // Fallback to default schemes
         isDarkMode -> DarkColorScheme
