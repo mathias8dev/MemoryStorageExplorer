@@ -16,6 +16,7 @@ coreLibraryDesugarVersion = "2.1.5"
 datastoreVersion = "1.1.7"
 koinVersion = "4.1.1"
 koinKspVersion = "2.1.0"
+materialKolor = "4.0.4"
 media3Version = "1.8.0"
 timberVersion = "5.0.1"
 materialIconsExtended = "1.7.8"
@@ -53,6 +54,7 @@ androidx-material3 = { group = "androidx.compose.material3", name = "material3" 
 
 desugar_jdk_libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "coreLibraryDesugarVersion" }
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
+material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
 media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3Version" }
 media3-session = { module = "androidx.media3:media3-session", version.ref = "media3Version" }
 media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "media3Version" }

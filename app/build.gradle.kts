@@ -98,7 +98,7 @@ android {
         compose = true
         buildConfig = true
     }
-    
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -115,6 +115,8 @@ dependencies {
 
 
     implementation(libs.jsoup)
+    implementation(libs.material.kolor)
+
 
     implementation(files("libs/sun-common-server.jar"))
     implementation(files("libs/http-2.2.1.jar"))

@@ -277,7 +277,7 @@ class MainActivity : ComponentActivity() {
 
 
             MemoriesStorageExplorerTheme(
-                darkTheme = appSettings.useDarkMode || isSystemInDarkTheme()
+                appSettings = appSettings
             ) {
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),

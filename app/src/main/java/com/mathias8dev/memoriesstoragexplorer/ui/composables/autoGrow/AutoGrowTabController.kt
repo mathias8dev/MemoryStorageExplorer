@@ -1,13 +1,11 @@
 package com.mathias8dev.memoriesstoragexplorer.ui.composables.autoGrow
 
 import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.RememberCoroutineScopeOwner
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.RememberCoroutineScopeProvider
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.koin.core.annotation.Factory
@@ -20,7 +18,7 @@ class AutoGrowTabController : RememberCoroutineScopeProvider by RememberCoroutin
     private val _tabIndex: MutableStateFlow<Int> = MutableStateFlow(0)
     val tabIndex: StateFlow<Int> = _tabIndex
     private val _tabs = mutableStateListOf(
-        AutoGrowTab(""),
+        AutoGrowTab("Internal Storage"),
     )
     val tabs: List<AutoGrowTab> = _tabs
 
@@ -40,7 +38,7 @@ class AutoGrowTabController : RememberCoroutineScopeProvider by RememberCoroutin
 
             // If swiping to a new position beyond current tabs, create a new tab
             if (newIndex >= tabs.size) {
-                _tabs.add(AutoGrowTab(title = ""))
+                _tabs.add(AutoGrowTab(title = "Internal Storage"))
                 Timber.d("updateTabIndexBasedOnSwipe: Created new tab at index $newIndex")
             }
 
@@ -61,7 +59,6 @@ class AutoGrowTabController : RememberCoroutineScopeProvider by RememberCoroutin
     }
 
     suspend fun updateTabNameAt(index: Int = tabIndex.value, title: String) = coroutineScope {
-        // COROUTINE FIX: Remove nested coroutineScope.launch - already in coroutineScope
         tabMutex.withLock {
             if (index !in _tabs.indices) {
                 Timber.w("updateTabNameAt: Index $index out of bounds (tabs size: ${_tabs.size})")

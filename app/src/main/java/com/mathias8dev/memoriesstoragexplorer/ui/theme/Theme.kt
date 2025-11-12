@@ -9,6 +9,9 @@ import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
+import com.materialkolor.dynamicColorScheme
+import com.mathias8dev.memoriesstoragexplorer.domain.enums.ThemeMode
+import com.mathias8dev.memoriesstoragexplorer.domain.models.AppSettings
 
 private val DarkColorScheme = darkColorScheme(
     primary = Purple80,
@@ -34,18 +37,32 @@ private val LightColorScheme = lightColorScheme(
 
 @Composable
 fun MemoriesStorageExplorerTheme(
+    appSettings: AppSettings? = null,
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
+    // Determine actual dark mode based on theme mode
+    val isDarkMode = when (appSettings?.themeMode) {
+        ThemeMode.LIGHT -> false
+        ThemeMode.DARK -> true
+        ThemeMode.SYSTEM, null -> darkTheme
+    }
+
     val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+        // Use dynamic colors on Android 12+ if seed color is default
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+                appSettings == null -> {
             val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            if (isDarkMode) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
 
-        darkTheme -> DarkColorScheme
+        appSettings != null -> {
+            dynamicColorScheme(appSettings.seedColor, isDarkMode)
+        }
+        // Fallback to default schemes
+        isDarkMode -> DarkColorScheme
         else -> LightColorScheme
     }
 

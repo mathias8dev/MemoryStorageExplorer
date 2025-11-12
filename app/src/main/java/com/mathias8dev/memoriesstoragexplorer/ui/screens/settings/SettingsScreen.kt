@@ -25,11 +25,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -64,6 +67,14 @@ fun SettingsScreen(
     val appSettings = LocalAppSettings.current
     val cacheStats by viewModel.cacheStats.collectAsStateWithLifecycle()
 
+    var showAppearanceBottomSheet by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    val appearanceBottomSheetState = rememberModalBottomSheetState(
+        skipPartiallyExpanded = true
+    )
+    val coroutineScope = rememberCoroutineScope()
 
     var showContactDialog by rememberSaveable {
         mutableStateOf(false)
@@ -122,18 +133,15 @@ fun SettingsScreen(
                     modifier = Modifier
                         .padding(horizontal = 16.dp)
                         .animateContentSize(),
-                    sectionTitle = "Look and feel"
+                    sectionTitle = "Personalization"
                 ) {
-                    SwitchSettingItem(
-                        actionTitle = "Theme",
-                        actionContent = stringResource(R.string.use_dark_theme),
-                        value = appSettings.useDarkMode,
-                        onValueChanged = {
-                            viewModel.onAppSettingsChanged(AppSettings::useDarkMode, it)
+                    ClickableSettingItem(
+                        title = "Appearance",
+                        subtitle = "${appSettings.themeMode.toDisplayString()} theme",
+                        onClick = {
+                            showAppearanceBottomSheet = true
                         }
                     )
-
-
                 }
 
                 // Cache & Performance Section
@@ -258,6 +266,26 @@ fun SettingsScreen(
 
         }
     )
+
+    // Appearance Bottom Sheet
+    if (showAppearanceBottomSheet) {
+        AppearanceBottomSheet(
+            sheetState = appearanceBottomSheetState,
+            currentSettings = appSettings,
+            onDismiss = {
+                coroutineScope.launch {
+                    appearanceBottomSheetState.hide()
+                    showAppearanceBottomSheet = false
+                }
+            },
+            onThemeModeChanged = { themeMode ->
+                viewModel.onAppSettingsChanged(AppSettings::themeMode, themeMode)
+            },
+            onSeedColorChanged = { seedColor ->
+                viewModel.onAppSettingsChanged(AppSettings::themeSeedColor, seedColor)
+            }
+        )
+    }
 }
 
 
