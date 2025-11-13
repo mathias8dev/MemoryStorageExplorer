@@ -121,7 +121,7 @@ class BasicTextEditorActivity : ComponentActivity() {
                                 BasicTextEditorComposable(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .padding(16.dp),
+                                        .padding(end = 16.dp, top = 16.dp, bottom = 16.dp),
                                     model = uri,
                                     onTextChange = {
                                         updatedTextContent = it
