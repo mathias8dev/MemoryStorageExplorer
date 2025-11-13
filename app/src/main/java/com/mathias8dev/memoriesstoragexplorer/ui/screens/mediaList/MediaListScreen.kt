@@ -636,46 +636,46 @@ fun MediaListScreen(
                     }
 
                     Box(modifier = Modifier.fillMaxSize()) {
-                        if (!shouldRender && !isCurrentPage) {
+                        /*if (!shouldRender && !isCurrentPage) {
                             // Show loading placeholder for adjacent pages during pre-rendering
                             MediaListLoadingComposable()
-                        } else {
-                            key(backStackEntry?.uid) {
-                                if (currentMediaGroup == MediaGroup.Home) {
-                                    MediaGroupHomeComposable(
-                                        modifier = Modifier.padding(top = 16.dp),
-                                        onMediaGroupClick = viewModel::onMediaGroupClick
-                                    )
-                                } else {
-                                    mediaResponse.onLoading {
-                                        MediaListLoadingComposable()
-                                    }
-                                    mediaResponse.onSuccess { mediaList ->
-                                        MediaListComposable(
-                                            layoutMode = localAppSettings.layoutMode,
-                                            mediaList = mediaList,
-                                            currentQuery = searchTerm,
-                                            selectedMedia = selectedMedia,
-                                            onMediaLongClick = clipboardHandler::onAddMedia,
-                                            onMediaClick = { mediaInfo ->
-                                                if (selectedMedia.isNotEmpty()) {
-                                                    if (selectedMedia.contains(mediaInfo)) {
-                                                        clipboardHandler.onRemoveSelectedMedia(mediaInfo)
-                                                    } else {
-                                                        clipboardHandler.onAddMedia(mediaInfo)
-                                                    }
+                        } else {*/
+                        key(backStackEntry?.uid) {
+                            if (currentMediaGroup == MediaGroup.Home) {
+                                MediaGroupHomeComposable(
+                                    modifier = Modifier.padding(top = 16.dp),
+                                    onMediaGroupClick = viewModel::onMediaGroupClick
+                                )
+                            } else {
+                                mediaResponse.onLoading {
+                                    MediaListLoadingComposable()
+                                }
+                                mediaResponse.onSuccess { mediaList ->
+                                    MediaListComposable(
+                                        layoutMode = localAppSettings.layoutMode,
+                                        mediaList = mediaList,
+                                        currentQuery = searchTerm,
+                                        selectedMedia = selectedMedia,
+                                        onMediaLongClick = clipboardHandler::onAddMedia,
+                                        onMediaClick = { mediaInfo ->
+                                            if (selectedMedia.isNotEmpty()) {
+                                                if (selectedMedia.contains(mediaInfo)) {
+                                                    clipboardHandler.onRemoveSelectedMedia(mediaInfo)
                                                 } else {
-                                                    viewModel.onMediaClick(
-                                                        mediaInfo = mediaInfo,
-                                                        context = localContext,
-                                                    )
+                                                    clipboardHandler.onAddMedia(mediaInfo)
                                                 }
-                                            },
-                                        )
-                                    }
+                                            } else {
+                                                viewModel.onMediaClick(
+                                                    mediaInfo = mediaInfo,
+                                                    context = localContext,
+                                                )
+                                            }
+                                        },
+                                    )
                                 }
                             }
                         }
+//                    }
                     }
                 }
 
