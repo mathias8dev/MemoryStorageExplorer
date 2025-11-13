@@ -173,6 +173,76 @@ class MediaCacheManager {
     }
 
     /**
+     * Generate cache key with filters and sort mode
+     */
+    fun generateKeyWithFilters(
+        path: String,
+        filterHash: Int,
+        sortMode: String
+    ): String {
+        val normalizedPath = path.trim().trimEnd('/')
+        return "$normalizedPath|filter:$filterHash|sort:$sortMode"
+    }
+
+    /**
+     * Get cached media list with specific filters and sort mode
+     */
+    suspend fun getWithFilters(
+        path: String,
+        filterHash: Int,
+        sortMode: String
+    ): List<MediaInfo>? {
+        return mutex.withLock {
+            val key = generateKeyWithFilters(path, filterHash, sortMode)
+            cache.get(key)?.data
+        }
+    }
+
+    /**
+     * Store media list in cache with specific filters and sort mode
+     */
+    suspend fun putWithFilters(
+        path: String,
+        filterHash: Int,
+        sortMode: String,
+        data: List<MediaInfo>
+    ) {
+        mutex.withLock {
+            val key = generateKeyWithFilters(path, filterHash, sortMode)
+            val entry = MediaCacheEntry(
+                data = data,
+                path = path
+            )
+            cache.put(key, entry)
+        }
+    }
+
+    /**
+     * Execute a query with caching including filters and sort mode
+     */
+    suspend fun getOrPutWithFilters(
+        path: String,
+        filterHash: Int,
+        sortMode: String,
+        query: suspend () -> List<MediaInfo>
+    ): List<MediaInfo> {
+        // Try to get from cache first
+        getWithFilters(path, filterHash, sortMode)?.let { cachedData ->
+            Timber.d("Cache HIT for path: $path, filterHash: $filterHash, sortMode: $sortMode")
+            return cachedData
+        }
+
+        // Cache miss - execute query
+        Timber.d("Cache MISS - executing query for path: $path, filterHash: $filterHash, sortMode: $sortMode")
+        val result = query()
+
+        // Store in cache
+        putWithFilters(path, filterHash, sortMode, result)
+
+        return result
+    }
+
+    /**
      * Enum for different query types to distinguish cache entries
      */
     enum class QueryType {

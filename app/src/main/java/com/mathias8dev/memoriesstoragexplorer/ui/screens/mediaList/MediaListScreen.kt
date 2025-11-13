@@ -115,6 +115,11 @@ fun MediaListScreen(
     val selectedMedia = clipboardHandler.selectedMedia
     val clipboard = clipboardHandler.clipboard
 
+    var loaded by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+
     val localContext = LocalContext.current
 
     val density = LocalDensity.current
@@ -330,12 +335,15 @@ fun MediaListScreen(
         else clipboardHandler.onRemoveAllSelectedMedia()
     }
 
-    LaunchedEffect(path) {
-        viewModel.onBackStackEntryChanged(
-            entry = BackStackEntry(
-                path = path,
+    LaunchedEffect(Unit) {
+        if (!loaded) {
+            viewModel.onBackStackEntryChanged(
+                entry = BackStackEntry(
+                    path = path,
+                )
             )
-        )
+            loaded = true
+        }
     }
 
 

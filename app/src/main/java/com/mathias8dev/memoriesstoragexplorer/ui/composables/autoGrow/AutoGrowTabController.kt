@@ -86,6 +86,7 @@ class AutoGrowTabController : RememberCoroutineScopeProvider by RememberCoroutin
             Timber.d("removeTabAt: Removing tab at $index (current index: ${_tabIndex.value})")
             _tabs.removeAt(index)
 
+
             // LOGIC FIX: Update current index properly
             // If we removed a tab before or at the current index, shift left
             if (index <= _tabIndex.value) {

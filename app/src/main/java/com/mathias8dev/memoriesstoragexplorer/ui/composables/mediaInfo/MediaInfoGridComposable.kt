@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -32,7 +33,7 @@ internal fun MediaInfoGridComposable(
     modifier: Modifier = Modifier,
     mediaInfo: MediaInfo,
     selected: Boolean = false,
-    iconSizeDp: Dp = 48.dp,
+    iconSizeDp: Dp = 72.dp,
     innerPaddingValues: PaddingValues = PaddingValues(0.dp),
     layoutMode: LayoutMode = LayoutMode.GRID,
     query: String? = null,
@@ -52,7 +53,7 @@ internal fun MediaInfoGridComposable(
         file.mimeData
     }
 
-    val iconResource = remember(file, mimeData) {
+    remember(file, mimeData) {
         file.toIconResource(localContext)
     }
 
@@ -94,7 +95,9 @@ internal fun MediaInfoGridComposable(
             highlightWith = query,
             fontSize = 14.sp,
             lineHeight = 16.sp,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            maxLines = 3,
+            overflow = TextOverflow.MiddleEllipsis
         )
 
     }

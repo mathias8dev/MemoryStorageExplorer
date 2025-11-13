@@ -33,6 +33,8 @@ import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.StorageVolume
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.StorageVolumeOverview
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.fileOperations.FileCreateDirectoryUseCase
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.disk.fileOperations.FileCreateUseCase
+import com.mathias8dev.memoriesstoragexplorer.domain.useCases.monitor.FileChangeEvent
+import com.mathias8dev.memoriesstoragexplorer.domain.useCases.monitor.FileChangeMonitorUseCase
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.queries.QueryAllApksUseCase
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.queries.QueryAllArchivesUseCase
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.queries.QueryAllAudiosUseCase
@@ -46,7 +48,6 @@ import com.mathias8dev.memoriesstoragexplorer.domain.useCases.queries.QueryMedia
 import com.mathias8dev.memoriesstoragexplorer.domain.useCases.queries.QueryRecentFilesUseCase
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.Resource
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.data
-import com.mathias8dev.memoriesstoragexplorer.domain.utils.isSuccess
 import com.mathias8dev.memoriesstoragexplorer.domain.utils.otherwise
 import com.mathias8dev.memoriesstoragexplorer.ui.activities.imageViewer.ImageViewerActivity
 import com.mathias8dev.memoriesstoragexplorer.ui.activities.mediaPlayer.MediaPlayerActivity
@@ -94,6 +95,7 @@ class SharedViewModel(
     private val createFileUseCase: FileCreateUseCase,
     private val createDirectoryUseCase: FileCreateDirectoryUseCase,
     private val storageVolumeMonitorUseCase: StorageVolumeMonitorUseCase,
+    private val fileChangeMonitorUseCase: FileChangeMonitorUseCase,
     private val cacheManager: MediaCacheManager,
     private val appSettingsRepository: AppSettingsRepository,
 ) : ViewModel(), AppSettingsService by appSettingsRepository {
@@ -106,7 +108,7 @@ class SharedViewModel(
 
     val mediaQueryRequestResponse by lazy { _mediaQueryRequestResponse.asStateFlow() }
 
-    private val backStackHolder = BackStackHolder()
+    private val backStacksHolder = BackStacksHolder()
     private val tabsController = AutoGrowTabController()
 
     private val _backStackEntry = MutableStateFlow<BackStackEntry?>(null)
@@ -162,6 +164,14 @@ class SharedViewModel(
                 }
             }
 
+            // Listen for file system changes
+            launch {
+                fileChangeMonitorUseCase.events.collect { event ->
+                    Timber.d("File change event received: $event")
+                    handleFileChangeEvent(event)
+                }
+            }
+
             delay(1.seconds)
             initialized = true // We don't want the initialization of the pagerState trigger the collect. Since it can false the backstack
 
@@ -175,10 +185,19 @@ class SharedViewModel(
     fun onBackStackEntryChanged(position: Int = tabIndex.value, entry: BackStackEntry) {
         viewModelScope.launch {
             Timber.d("onBackStackEntryChanged: ${tabIndex.value} - $entry")
-            backStackHolder.setCurrentPosition(position)
-            backStackHolder.addAt(entry = entry)
+            backStacksHolder.setCurrentStackPosition(position)
+            backStacksHolder.addEntryAt(entry = entry)
             Timber.d("backStackEntry: ${backStackEntry.value}")
-            onReload(wipeCache = false, force = true)
+
+            // Start monitoring directory if it's a file system path
+            entry.path?.let { path ->
+                if (!path.startsWith("media_group:")) {
+                    // It's a real file system path, start monitoring
+                    fileChangeMonitorUseCase.startDirectoryMonitoring(path)
+                }
+            }
+
+            onReload(wipeCache = false, force = false)
         }
 
 
@@ -188,8 +207,8 @@ class SharedViewModel(
         viewModelScope.launch {
             Timber.d("onTabIndexChanged: $index")
             tabsController.updateTabIndex(index)
-            backStackHolder.setCurrentPosition(index)
-            onReload(wipeCache = false, force = true)
+            backStacksHolder.setCurrentStackPosition(index)
+            onReload(wipeCache = false, force = false)
             Timber.d("backStackEntry: ${backStackEntry.value}")
         }
     }
@@ -198,8 +217,8 @@ class SharedViewModel(
         viewModelScope.launch {
             Timber.d("onTabRemovedAt: $index")
             tabsController.removeTabAt(index)
-            backStackHolder.removeAt(index)
-            backStackHolder.setCurrentPosition(tabIndex.value)
+            backStacksHolder.deleteStackAndShiftAt(index)
+            //backStacksHolder.setCurrentStackPosition(tabIndex.value)
             onReload(wipeCache = false, force = true)
             Timber.d("backStackEntry: ${backStackEntry.value}")
         }
@@ -209,7 +228,7 @@ class SharedViewModel(
         viewModelScope.launch {
             Timber.d("onTabIndexChangedBasedOnSwipe")
             tabsController.updateTabIndexBasedOnSwipe(isSwipeToLeft)
-            val entry = backStackHolder.getAt(tabIndex.value) ?: BackStackEntry()
+            val entry = backStacksHolder.getEntryAt(tabIndex.value) ?: BackStackEntry()
             onBackStackEntryChanged(entry = entry)
             Timber.d("backStackEntry: ${backStackEntry.value}")
         }
@@ -218,7 +237,7 @@ class SharedViewModel(
     fun onPopCurrentBackStack() {
         viewModelScope.launch {
             Timber.d("onPopCurrentBackStack")
-            backStackHolder.removeAt()
+            backStacksHolder.removeLastEntryAt()
             onReload(wipeCache = false, force = true)
             Timber.d("backStackEntry: ${backStackEntry.value}")
         }
@@ -273,7 +292,7 @@ class SharedViewModel(
                 selectedVolumeOverview = null
             }.otherwise {
                 val currentPathIsNotStorageVolumePath = !currentPathIsStorageVolumePathUseCase(currentRootPath)
-                val lastPoppedPath = backStackHolder.lastPoppedAt()?.path
+                val lastPoppedPath = backStacksHolder.lastPoppedAt()?.path
                 val lastSeenPath = if (currentPathIsNotStorageVolumePath) currentRootPath else lastPoppedPath
                 if (selectedVolumeOverview == null || currentPathIsNotStorageVolumePath) {
                     val overview = getStorageVolumeOverviewUseCase.invoke(
@@ -289,13 +308,13 @@ class SharedViewModel(
     }
 
     private fun updateBackStackState() {
-        if (backStackHolder.isStackEmptyAt()) {
-            onBackStackEntryChanged(entry = BackStackEntry.default)
+        if (backStacksHolder.isStackEmptyAt()) {
+            onBackStackEntryChanged(entry = BackStackEntry())
             return
         }
-        currentStackSize.intValue = backStackHolder.stackSizeAt()
-        isCurrentStackEmpty.value = backStackHolder.isStackEmptyAt()
-        _backStackEntry.value = backStackHolder.getAt()!!
+        currentStackSize.intValue = backStacksHolder.stackSizeAt()
+        isCurrentStackEmpty.value = backStacksHolder.isStackEmptyAt()
+        _backStackEntry.value = backStacksHolder.getEntryAt()!!
     }
 
     private fun updateTabName() {
@@ -593,7 +612,7 @@ class SharedViewModel(
     fun onFilter(queries: List<FilterQuery>) {
         viewModelScope.launch {
             val entry = backStackEntry.value!!.copy(filterQueries = queries)
-            backStackHolder.updateLastEntryAt(entry = entry)
+            backStacksHolder.updateLastEntryAt(entry = entry)
             onReload(wipeCache = false, force = false)
         }
     }
@@ -607,7 +626,7 @@ class SharedViewModel(
     fun onSort(sortMode: SortMode) {
         viewModelScope.launch {
             val entry = backStackEntry.value!!.copy(sortMode = sortMode)
-            backStackHolder.updateLastEntryAt(entry = entry)
+            backStacksHolder.updateLastEntryAt(entry = entry)
             onReload(wipeCache = false, force = false)
         }
     }
@@ -640,25 +659,85 @@ class SharedViewModel(
 
     private fun loadContentByLastBackStackEntry(force: Boolean = true) {
         viewModelScope.launch {
-            val entry = backStackHolder.getAt().otherwise(BackStackEntry.default)
-            if (_mediaQueryRequestResponse.value.isSuccess() && !force) {
-                _mediaQueryRequestResponse.value.data?.let { mediaList ->
-                    val filtered = mediaList.filter { mediaInfo -> entry.filterQueries.all { filterQuery -> filterQuery.filter(mediaInfo, false) } }
-                    val sorted = filtered.sortedWith(entry.sortMode)
-                    _mediaQueryRequestResponse.emit(Resource.Success(sorted))
+            val entry = backStacksHolder.getEntryAt().otherwise(BackStackEntry.default)
+            val path = entry.path ?: defaultStorageRootPath
+            val filterHash = entry.filterQueries.hashCode()
+            val sortModeKey = entry.sortMode.toString()
 
-                    return@launch
+            _mediaQueryRequestResponse.emit(Resource.Loading())
+
+            try {
+                val result = if (force) {
+                    // Force reload: query fresh and update cache
+                    val freshData = queryAndProcessData(path, entry.filterQueries, entry.sortMode)
+                    cacheManager.putWithFilters(path, filterHash, sortModeKey, freshData)
+                    freshData
+                } else {
+                    // Use cache with automatic fallback to query
+                    cacheManager.getOrPutWithFilters(path, filterHash, sortModeKey) {
+                        queryAndProcessData(path, entry.filterQueries, entry.sortMode)
+                    }
                 }
 
+                _mediaQueryRequestResponse.emit(Resource.Success(result))
+
+                // Update root cache if applicable
+                if (cachedRootMediaInfo.isNullOrEmpty() && path == defaultStorageRootPath) {
+                    cachedRootMediaInfo = result
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Error loading content from path: $path")
+                _mediaQueryRequestResponse.emit(
+                    Resource.Error(
+                        message = "Failed to load content: ${e.message}",
+                        cause = e
+                    )
+                )
             }
-
-            queryFilesByAbstractPath(
-                path = entry.path ?: defaultStorageRootPath,
-                filterQueries = entry.filterQueries,
-                sortMode = entry.sortMode
-            )
-
         }
+    }
+
+    private suspend fun queryAndProcessData(
+        path: String,
+        filterQueries: List<FilterQuery>,
+        sortMode: SortMode
+    ): List<MediaInfo> {
+        // Determine query function based on path
+        val queryFunc: (suspend () -> List<MediaInfo>) = when (path) {
+            MediaGroup.Audio.path -> queryAllAudiosUseCase::invoke
+            MediaGroup.Video.path -> queryAllVideosUseCase::invoke
+            MediaGroup.Document.path -> queryAllDocumentsUseCase::invoke
+            MediaGroup.Image.path -> queryAllImagesUseCase::invoke
+            MediaGroup.Archive.path -> queryAllArchivesUseCase::invoke
+            MediaGroup.RecentFiles.path -> queryRecentFilesUseCase::invoke
+            MediaGroup.AllFiles.path -> queryAllMediaUseCase::invoke
+            MediaGroup.Apk.path -> queryAllApksUseCase::invoke
+            MediaGroup.RecycleBin.path -> queryAllFromRecycleBinUseCase::invoke
+            MediaGroup.App.path -> queryInstalledApps::invoke
+            MediaGroup.Root.path -> {
+                Timber.d("Listing root files")
+                kotlin.runCatching {
+                    val files = listRootFiles()
+                    Timber.d("Root files: $files")
+                }
+                suspend { emptyList() }
+            }
+            // Default: treat as file system path
+            else -> suspend { queryMediaListFromPathUseCase.invoke(path) }
+        }
+
+        // Execute query
+        val rawData = queryFunc.invoke()
+
+        // Apply filters and sorting
+        val filtered = rawData.filter { mediaInfo ->
+            filterQueries.all { filterQuery ->
+                filterQuery.filter(mediaInfo, false)
+            }
+        }
+        val sorted = filtered.sortedWith(sortMode)
+
+        return sorted
     }
 
 
@@ -727,6 +806,8 @@ class SharedViewModel(
      */
     fun startStorageMonitoring() {
         storageVolumeMonitorUseCase.startMonitoring()
+        // Also start MediaStore monitoring for system-level file changes
+        fileChangeMonitorUseCase.startMediaStoreMonitoring()
     }
 
     /**
@@ -734,6 +815,100 @@ class SharedViewModel(
      */
     fun stopStorageMonitoring() {
         storageVolumeMonitorUseCase.stopMonitoring()
+        fileChangeMonitorUseCase.cleanup()
+    }
+
+    /**
+     * Handles file change events and invalidates cache accordingly
+     */
+    private fun handleFileChangeEvent(event: FileChangeEvent) {
+        viewModelScope.launch {
+            when (event) {
+                is FileChangeEvent.Created -> {
+                    val parentPath = event.path.substringBeforeLast("/")
+                    Timber.i("File created: ${event.path}, invalidating cache for: $parentPath")
+                    cacheManager.invalidate(parentPath)
+                    if (currentRootPath == parentPath) onReload(wipeCache = false, force = true)
+                }
+
+                is FileChangeEvent.Deleted -> {
+                    val parentPath = event.path.substringBeforeLast("/")
+                    Timber.i("File deleted: ${event.path}, invalidating cache for: $parentPath")
+                    cacheManager.invalidate(parentPath)
+                    if (currentRootPath == parentPath) onReload(wipeCache = false, force = true)
+                }
+
+                is FileChangeEvent.Modified -> {
+                    val parentPath = event.path.substringBeforeLast("/")
+                    Timber.i("File modified: ${event.path}, invalidating cache for: $parentPath")
+                    cacheManager.invalidate(parentPath)
+                    if (currentRootPath == parentPath) onReload(wipeCache = false, force = true)
+                }
+
+                is FileChangeEvent.MovedFrom -> {
+                    val parentPath = event.path.substringBeforeLast("/")
+                    Timber.i("File moved from: ${event.path}, invalidating cache for: $parentPath")
+                    cacheManager.invalidate(parentPath)
+                    if (currentRootPath == parentPath) onReload(wipeCache = false, force = true)
+                }
+
+                is FileChangeEvent.MovedTo -> {
+                    val parentPath = event.path.substringBeforeLast("/")
+                    Timber.i("File moved to: ${event.path}, invalidating cache for: $parentPath")
+                    cacheManager.invalidate(parentPath)
+                    if (currentRootPath == parentPath) onReload(wipeCache = false, force = true)
+                }
+
+                is FileChangeEvent.DirectoryChanged -> {
+                    // Batch changes in directory
+                    Timber.i("Directory changed: ${event.path} (${event.changeCount} changes)")
+                    cacheManager.invalidate(event.path)
+
+                    if (currentRootPath == event.path) {
+                        onReload(wipeCache = false, force = true)
+                    }
+                }
+
+                is FileChangeEvent.MediaStoreChanged -> {
+                    // System-level media change - invalidate relevant caches
+                    Timber.i("MediaStore changed: ${event.type}")
+                    when (event.type) {
+                        FileChangeEvent.MediaStoreChanged.MediaType.IMAGES -> {
+                            cacheManager.invalidate(MediaGroup.Image.path)
+                        }
+
+                        FileChangeEvent.MediaStoreChanged.MediaType.VIDEOS -> {
+                            cacheManager.invalidate(MediaGroup.Video.path)
+                        }
+
+                        FileChangeEvent.MediaStoreChanged.MediaType.AUDIO -> {
+                            cacheManager.invalidate(MediaGroup.Audio.path)
+                        }
+
+                        FileChangeEvent.MediaStoreChanged.MediaType.FILES -> {
+                            cacheManager.invalidate(MediaGroup.AllFiles.path)
+                        }
+
+                        FileChangeEvent.MediaStoreChanged.MediaType.DOWNLOADS -> {
+                            cacheManager.invalidate(MediaGroup.RecentFiles.path)
+                        }
+                    }
+
+                    // Reload if currently viewing affected media group
+                    val shouldReload = when (event.type) {
+                        FileChangeEvent.MediaStoreChanged.MediaType.IMAGES -> currentRootPath == MediaGroup.Image.path
+                        FileChangeEvent.MediaStoreChanged.MediaType.VIDEOS -> currentRootPath == MediaGroup.Video.path
+                        FileChangeEvent.MediaStoreChanged.MediaType.AUDIO -> currentRootPath == MediaGroup.Audio.path
+                        FileChangeEvent.MediaStoreChanged.MediaType.FILES -> currentRootPath == MediaGroup.AllFiles.path
+                        FileChangeEvent.MediaStoreChanged.MediaType.DOWNLOADS -> currentRootPath == MediaGroup.RecentFiles.path
+                    }
+
+                    if (shouldReload) {
+                        onReload(wipeCache = false, force = true)
+                    }
+                }
+            }
+        }
     }
 
     /**
