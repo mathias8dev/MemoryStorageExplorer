@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentPaste
@@ -609,40 +610,69 @@ fun MediaListScreen(
 
                 HorizontalPager(
                     state = pagerState,
+                    beyondViewportPageCount = 1,
+                    pageNestedScrollConnection = PagerDefaults.pageNestedScrollConnection(
+                        state = pagerState,
+                        orientation = androidx.compose.foundation.gestures.Orientation.Horizontal
+                    )
                 ) { page ->
+                    // Deferred rendering to improve swipe performance
+                    val isCurrentPage by remember {
+                        derivedStateOf { pagerState.currentPage == page }
+                    }
+
+                    var shouldRender by remember { mutableStateOf(false) }
+
+                    LaunchedEffect(page, isCurrentPage) {
+                        if (isCurrentPage) {
+                            // Current page: render immediately
+                            shouldRender = true
+                        } else {
+                            shouldRender = false
+                            // Adjacent pages: defer rendering slightly
+                            delay(100)
+                            shouldRender = true
+                        }
+                    }
+
                     Box(modifier = Modifier.fillMaxSize()) {
-                        key(backStackEntry?.uid) {
-                            if (currentMediaGroup == MediaGroup.Home) {
-                                MediaGroupHomeComposable(
-                                    modifier = Modifier.padding(top = 16.dp),
-                                    onMediaGroupClick = viewModel::onMediaGroupClick
-                                )
-                            } else {
-                                mediaResponse.onLoading {
-                                    MediaListLoadingComposable()
-                                }
-                                mediaResponse.onSuccess { mediaList ->
-                                    MediaListComposable(
-                                        layoutMode = localAppSettings.layoutMode,
-                                        mediaList = mediaList,
-                                        currentQuery = searchTerm,
-                                        selectedMedia = selectedMedia,
-                                        onMediaLongClick = clipboardHandler::onAddMedia,
-                                        onMediaClick = { mediaInfo ->
-                                            if (selectedMedia.isNotEmpty()) {
-                                                if (selectedMedia.contains(mediaInfo)) {
-                                                    clipboardHandler.onRemoveSelectedMedia(mediaInfo)
-                                                } else {
-                                                    clipboardHandler.onAddMedia(mediaInfo)
-                                                }
-                                            } else {
-                                                viewModel.onMediaClick(
-                                                    mediaInfo = mediaInfo,
-                                                    context = localContext,
-                                                )
-                                            }
-                                        },
+                        if (!shouldRender && !isCurrentPage) {
+                            // Show loading placeholder for adjacent pages during pre-rendering
+                            MediaListLoadingComposable()
+                        } else {
+                            key(backStackEntry?.uid) {
+                                if (currentMediaGroup == MediaGroup.Home) {
+                                    MediaGroupHomeComposable(
+                                        modifier = Modifier.padding(top = 16.dp),
+                                        onMediaGroupClick = viewModel::onMediaGroupClick
                                     )
+                                } else {
+                                    mediaResponse.onLoading {
+                                        MediaListLoadingComposable()
+                                    }
+                                    mediaResponse.onSuccess { mediaList ->
+                                        MediaListComposable(
+                                            layoutMode = localAppSettings.layoutMode,
+                                            mediaList = mediaList,
+                                            currentQuery = searchTerm,
+                                            selectedMedia = selectedMedia,
+                                            onMediaLongClick = clipboardHandler::onAddMedia,
+                                            onMediaClick = { mediaInfo ->
+                                                if (selectedMedia.isNotEmpty()) {
+                                                    if (selectedMedia.contains(mediaInfo)) {
+                                                        clipboardHandler.onRemoveSelectedMedia(mediaInfo)
+                                                    } else {
+                                                        clipboardHandler.onAddMedia(mediaInfo)
+                                                    }
+                                                } else {
+                                                    viewModel.onMediaClick(
+                                                        mediaInfo = mediaInfo,
+                                                        context = localContext,
+                                                    )
+                                                }
+                                            },
+                                        )
+                                    }
                                 }
                             }
                         }
