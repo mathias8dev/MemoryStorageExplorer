@@ -91,13 +91,61 @@ class LruMediaCache(
      * Get cache statistics for debugging
      */
     fun getStats(): CacheStats {
+        val snapshot = cache.snapshot()
+        val totalMemoryBytes = calculateMemoryUsage(snapshot.values)
+
         return CacheStats(
             size = cache.size(),
             maxSize = cache.maxSize(),
             hitCount = cache.hitCount(),
             missCount = cache.missCount(),
-            evictionCount = cache.evictionCount()
+            evictionCount = cache.evictionCount(),
+            memoryBytes = totalMemoryBytes
         )
+    }
+
+    /**
+     * Calculates approximate memory usage of cache entries
+     */
+    private fun calculateMemoryUsage(entries: Collection<MediaCacheEntry>): Long {
+        var totalBytes = 0L
+
+        entries.forEach { entry ->
+            // Base overhead per entry
+            totalBytes += 48 // Object header + references
+
+            // MediaCacheEntry fields
+            totalBytes += 8 // timestamp (Long)
+            totalBytes += estimateStringMemory(entry.path)
+
+            // MediaInfo list
+            totalBytes += 24 // ArrayList overhead
+            entry.data.forEach { mediaInfo ->
+                // Each MediaInfo object
+                totalBytes += 48 // Object header
+                totalBytes += 16 // Two Longs (mediaId, size)
+
+                // URI strings
+                mediaInfo.contentUri?.toString()?.let { totalBytes += estimateStringMemory(it) }
+                mediaInfo.privateContentUri?.toString()?.let { totalBytes += estimateStringMemory(it) }
+                mediaInfo.bucketPrivateContentUri?.toString()?.let { totalBytes += estimateStringMemory(it) }
+
+                // String fields
+                mediaInfo.name?.let { totalBytes += estimateStringMemory(it) }
+                mediaInfo.bucketName?.let { totalBytes += estimateStringMemory(it) }
+                mediaInfo.mimeTypeString?.let { totalBytes += estimateStringMemory(it) }
+            }
+        }
+
+        return totalBytes
+    }
+
+    /**
+     * Estimates memory used by a String
+     * String overhead (24 bytes) + char array (2 bytes per character)
+     */
+    private fun estimateStringMemory(str: String): Long {
+        return 24 + (str.length * 2L)
     }
 
     data class CacheStats(
@@ -105,12 +153,27 @@ class LruMediaCache(
         val maxSize: Int,
         val hitCount: Int,
         val missCount: Int,
-        val evictionCount: Int
+        val evictionCount: Int,
+        val memoryBytes: Long
     ) {
         val hitRate: Float
             get() = if (hitCount + missCount > 0) {
                 hitCount.toFloat() / (hitCount + missCount)
             } else 0f
+
+        val memoryKB: Double
+            get() = memoryBytes / 1024.0
+
+        val memoryMB: Double
+            get() = memoryBytes / (1024.0 * 1024.0)
+
+        fun formatMemory(): String {
+            return when {
+                memoryBytes < 1024 -> "$memoryBytes B"
+                memoryBytes < 1024 * 1024 -> String.format("%.2f KB", memoryKB)
+                else -> String.format("%.2f MB", memoryMB)
+            }
+        }
     }
 
     companion object {
