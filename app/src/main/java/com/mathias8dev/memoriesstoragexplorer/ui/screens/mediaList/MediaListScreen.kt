@@ -609,39 +609,41 @@ fun MediaListScreen(
 
                 HorizontalPager(
                     state = pagerState,
-                ) {
-                    key(backStackEntry?.uid) {
-                        if (currentMediaGroup == MediaGroup.Home) {
-                            MediaGroupHomeComposable(
-                                modifier = Modifier.padding(top = 16.dp),
-                                onMediaGroupClick = viewModel::onMediaGroupClick
-                            )
-                        } else {
-                            mediaResponse.onLoading {
-                                MediaListLoadingComposable()
-                            }
-                            mediaResponse.onSuccess { mediaList ->
-                                MediaListComposable(
-                                    layoutMode = localAppSettings.layoutMode,
-                                    mediaList = mediaList,
-                                    currentQuery = searchTerm,
-                                    selectedMedia = selectedMedia,
-                                    onMediaLongClick = clipboardHandler::onAddMedia,
-                                    onMediaClick = { mediaInfo ->
-                                        if (selectedMedia.isNotEmpty()) {
-                                            if (selectedMedia.contains(mediaInfo)) {
-                                                clipboardHandler.onRemoveSelectedMedia(mediaInfo)
-                                            } else {
-                                                clipboardHandler.onAddMedia(mediaInfo)
-                                            }
-                                        } else {
-                                            viewModel.onMediaClick(
-                                                mediaInfo = mediaInfo,
-                                                context = localContext,
-                                            )
-                                        }
-                                    },
+                ) { page ->
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        key(backStackEntry?.uid) {
+                            if (currentMediaGroup == MediaGroup.Home) {
+                                MediaGroupHomeComposable(
+                                    modifier = Modifier.padding(top = 16.dp),
+                                    onMediaGroupClick = viewModel::onMediaGroupClick
                                 )
+                            } else {
+                                mediaResponse.onLoading {
+                                    MediaListLoadingComposable()
+                                }
+                                mediaResponse.onSuccess { mediaList ->
+                                    MediaListComposable(
+                                        layoutMode = localAppSettings.layoutMode,
+                                        mediaList = mediaList,
+                                        currentQuery = searchTerm,
+                                        selectedMedia = selectedMedia,
+                                        onMediaLongClick = clipboardHandler::onAddMedia,
+                                        onMediaClick = { mediaInfo ->
+                                            if (selectedMedia.isNotEmpty()) {
+                                                if (selectedMedia.contains(mediaInfo)) {
+                                                    clipboardHandler.onRemoveSelectedMedia(mediaInfo)
+                                                } else {
+                                                    clipboardHandler.onAddMedia(mediaInfo)
+                                                }
+                                            } else {
+                                                viewModel.onMediaClick(
+                                                    mediaInfo = mediaInfo,
+                                                    context = localContext,
+                                                )
+                                            }
+                                        },
+                                    )
+                                }
                             }
                         }
                     }

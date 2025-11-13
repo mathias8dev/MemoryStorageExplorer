@@ -4,6 +4,11 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -25,6 +30,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,11 +38,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mathias8dev.memoriesstoragexplorer.SettingsProviderViewModel
 import com.mathias8dev.memoriesstoragexplorer.domain.models.AppSettings
-import com.mathias8dev.memoriesstoragexplorer.ui.composables.viewer.ZoomableImageViewerComposable
+import com.mathias8dev.memoriesstoragexplorer.ui.composables.viewer.ImageViewerComposable
 import com.mathias8dev.memoriesstoragexplorer.ui.theme.MemoriesStorageExplorerTheme
 import org.koin.androidx.compose.koinViewModel
 import timber.log.Timber
@@ -63,6 +70,7 @@ class ImageViewerActivity : ComponentActivity() {
             val isLoading by imageViewerViewModel.isLoading.collectAsStateWithLifecycle()
 
             var isImageZoomed by remember { mutableStateOf(false) }
+            var showTopBar by remember { mutableStateOf(true) }
 
             // Initialize ViewModel with the initial image
             LaunchedEffect(uri, folderPath, filePath) {
@@ -97,35 +105,13 @@ class ImageViewerActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    Scaffold(
-                        topBar = {
-                            TopAppBar(
-                                title = {
-                                    Text(text = "Preview")
-                                },
-                                navigationIcon = {
-                                    IconButton(
-                                        onClick = {
-                                            finish()
-                                        },
-                                        content = {
-                                            Icon(
-                                                Icons.AutoMirrored.Filled.ArrowBack,
-                                                contentDescription = "Back"
-                                            )
-                                        }
-                                    )
-                                }
-                            )
-                        }
-                    ) { padding ->
+                    Scaffold { padding ->
 
                         Timber.d("ImageUris: $imageUris")
                         if (type != null && type.startsWith("image/")) {
                             Box(
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(padding)
                             ) {
                                 if (imageUris.isNotEmpty()) {
                                     HorizontalPager(
@@ -138,11 +124,16 @@ class ImageViewerActivity : ComponentActivity() {
                                             orientation = androidx.compose.foundation.gestures.Orientation.Horizontal
                                         )
                                     ) { page ->
-                                        ZoomableImageViewerComposable(
+                                        ImageViewerComposable(
                                             modifier = Modifier.fillMaxSize(),
                                             model = imageUris[page],
                                             onZoomChanged = { zoomed ->
                                                 isImageZoomed = zoomed
+                                                Timber.d("Zoom changed to $zoomed")
+                                            },
+                                            onSingleTap = {
+                                                // Toggle topbar on single tap
+                                                showTopBar = !showTopBar
                                             }
                                         )
                                     }
@@ -155,6 +146,44 @@ class ImageViewerActivity : ComponentActivity() {
                                             .padding(16.dp)
                                     )
                                 }
+
+                                // Animated TopBar
+                                AnimatedVisibility(
+                                    visible = showTopBar,
+                                    enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
+                                    exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
+                                    modifier = Modifier.align(Alignment.TopCenter)
+                                ) {
+                                    TopAppBar(
+                                        title = {
+                                            Text(
+                                                text = if (imageUris.isNotEmpty()) {
+                                                    "${pagerState.currentPage + 1} / ${imageUris.size}"
+                                                } else {
+                                                    "Preview"
+                                                }
+                                            )
+                                        },
+                                        navigationIcon = {
+                                            IconButton(
+                                                onClick = {
+                                                    finish()
+                                                },
+                                                content = {
+                                                    Icon(
+                                                        Icons.AutoMirrored.Filled.ArrowBack,
+                                                        contentDescription = "Back"
+                                                    )
+                                                }
+                                            )
+                                        },
+                                        colors = TopAppBarDefaults.topAppBarColors(
+                                            containerColor = Color.Black.copy(alpha = 0.7f),
+                                            titleContentColor = Color.White,
+                                            navigationIconContentColor = Color.White
+                                        )
+                                    )
+                                }
                             }
                         } else {
                             Column(
@@ -162,7 +191,7 @@ class ImageViewerActivity : ComponentActivity() {
                                 verticalArrangement = Arrangement.Center,
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                Text(text = "An error occured, sorry")
+                                Text(text = "An error occurred, sorry")
                             }
                         }
                     }
