@@ -1,6 +1,11 @@
 package com.mathias8dev.memoriesstoragexplorer.ui.activities.mediaPlayer.components
 
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.net.Uri
+import android.os.IBinder
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.widget.FrameLayout
 import androidx.annotation.OptIn
@@ -63,6 +68,7 @@ import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.ui.PlayerView
+import com.mathias8dev.memoriesstoragexplorer.ui.services.mediaPlayback.MediaPlaybackService
 import kotlinx.coroutines.delay
 import timber.log.Timber
 import kotlin.time.Duration.Companion.milliseconds
@@ -95,8 +101,20 @@ fun EnhancedMediaPlayer(
                     context,
                     defaultDataSourceFactory
                 )
+
+                // Create MediaItem with metadata for notification
+                val mediaItem = MediaItem.Builder()
+                    .setUri(uri)
+                    .setMediaMetadata(
+                        androidx.media3.common.MediaMetadata.Builder()
+                            .setTitle(uri.lastPathSegment ?: "Media")
+                            .setArtist("Unknown Artist")
+                            .build()
+                    )
+                    .build()
+
                 val source = ProgressiveMediaSource.Factory(dataSourceFactory)
-                    .createMediaSource(MediaItem.fromUri(uri))
+                    .createMediaSource(mediaItem)
                 setMediaSource(source)
                 prepare()
 
@@ -119,11 +137,64 @@ fun EnhancedMediaPlayer(
             }
     }
 
+    // Manage MediaPlaybackService based on playback state
+    var mediaPlaybackService by remember { mutableStateOf<MediaPlaybackService?>(null) }
+    var isServiceBound by remember { mutableStateOf(false) }
+
+    val serviceConnection = remember {
+        object : ServiceConnection {
+            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                Timber.d("MediaPlaybackService connected")
+                val binder = service as? MediaPlaybackService.LocalBinder
+                mediaPlaybackService = binder?.getService()
+                mediaPlaybackService?.setPlayer(exoPlayer)
+                isServiceBound = true
+            }
+
+            override fun onServiceDisconnected(name: ComponentName?) {
+                Timber.d("MediaPlaybackService disconnected")
+                mediaPlaybackService = null
+                isServiceBound = false
+            }
+        }
+    }
+
+    // Start service when playback begins
+    LaunchedEffect(isPlaying) {
+        Timber.d("isPlaying changed to: $isPlaying, isServiceBound: $isServiceBound")
+
+        if (isPlaying && !isServiceBound) {
+            // Start and bind service when playback starts
+            Timber.d("Starting MediaPlaybackService")
+            val serviceIntent = Intent(context, MediaPlaybackService::class.java)
+            context.startService(serviceIntent)
+            context.bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
+        }
+    }
+
     // Update current position periodically
     LaunchedEffect(key1 = isPlaying) {
         while (isPlaying) {
             currentPosition = exoPlayer.currentPosition
             delay(100.milliseconds)
+        }
+    }
+
+    // Cleanup service on dispose
+    DisposableEffect(Unit) {
+        onDispose {
+            Timber.d("Disposing EnhancedMediaPlayer, isServiceBound: $isServiceBound")
+            if (isServiceBound) {
+                try {
+                    context.unbindService(serviceConnection)
+                } catch (e: Exception) {
+                    Timber.e(e, "Error unbinding service")
+                }
+            }
+            // Stop service if not playing
+            if (!exoPlayer.isPlaying) {
+                context.stopService(Intent(context, MediaPlaybackService::class.java))
+            }
         }
     }
 
